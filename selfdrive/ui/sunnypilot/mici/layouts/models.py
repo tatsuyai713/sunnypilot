@@ -13,6 +13,8 @@ from openpilot.selfdrive.ui.sunnypilot.layouts.settings.models import ModelsLayo
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.application import FontWeight, gui_app
 from openpilot.system.ui.lib.multilang import tr
+from openpilot.system.ui.widgets import Widget
+from openpilot.system.ui.widgets.label import MiciLabel
 from openpilot.system.ui.widgets.scroller import NavScroller
 
 class CurrentModelInfo(Widget):
