@@ -13,9 +13,7 @@ from openpilot.selfdrive.ui.sunnypilot.layouts.settings.models import ModelsLayo
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.application import FontWeight, gui_app
 from openpilot.system.ui.lib.multilang import tr
-from openpilot.system.ui.widgets import NavWidget, Widget
-from openpilot.system.ui.widgets.label import MiciLabel
-from openpilot.system.ui.widgets.scroller import Scroller
+from openpilot.system.ui.widgets.scroller import NavScroller
 
 class CurrentModelInfo(Widget):
   def __init__(self):
@@ -45,7 +43,7 @@ class CurrentModelInfo(Widget):
     self.info_text.set_position(self._rect.x + 20, self._rect.y + 161 - 25)
     self.info_text.render()
 
-class ModelsLayoutMici(NavWidget):
+class ModelsLayoutMici(NavScroller):
   def __init__(self, back_callback: Callable):
     super().__init__()
     self.set_back_callback(back_callback)
@@ -62,13 +60,8 @@ class ModelsLayoutMici(NavWidget):
     self.cancel_download_btn = BigButton(tr("cancel download"), "", "")
     self.cancel_download_btn.set_click_callback(lambda: ui_state.params.remove("ModelManager_DownloadIndex"))
 
-    self.main_items: list[Widget] = [
-      self.current_model_info,
-      self.select_model_btn,
-      self.cancel_download_btn
-    ]
-
-    self._scroller = Scroller(self.main_items, snap_items=False)
+    self.main_items = [self.current_model_info, self.select_model_btn, self.cancel_download_btn]
+    self._scroller.add_widgets(self.main_items)
 
   @property
   def model_manager(self):
@@ -82,7 +75,7 @@ class ModelsLayoutMici(NavWidget):
       folders.setdefault(folder, []).append(bundle)
     return folders
 
-  def _show_selection_view(self, items: list[Widget], back_callback: Callable):
+  def _show_selection_view(self, items, back_callback: Callable):
     self._scroller._items = items
     for item in items:
       item.set_touch_valid_callback(lambda: self._scroller.scroll_panel.is_touch_valid() and self._scroller.enabled)
@@ -169,10 +162,3 @@ class ModelsLayoutMici(NavWidget):
       self.current_model_info.info_header.set_text(tr("progress") + self._download_progress)
       self.current_model_info.info_text.set_text(f"{progress/count:.2f}%")
 
-
-  def _render(self, rect):
-    self._scroller.render(rect)
-
-  def show_event(self):
-    super().show_event()
-    self._scroller.show_event()
