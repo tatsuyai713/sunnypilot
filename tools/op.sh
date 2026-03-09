@@ -35,6 +35,21 @@ function loge() {
   fi
 }
 
+function retry() {
+  local attempts=$1
+  shift
+  for i in $(seq 1 "$attempts"); do
+    if "$@"; then
+      return 0
+    fi
+    if [ "$i" -lt "$attempts" ]; then
+      echo "  Attempt $i/$attempts failed, retrying in 5s..."
+      sleep 5
+    fi
+  done
+  return 1
+}
+
 function op_run_command() {
   CMD="$@"
 
@@ -62,7 +77,8 @@ function op_get_openpilot_dir() {
   done
 
   # Fallback to hardcoded directories if not found
-  for dir in "$HOME/openpilot" "/data/openpilot"; do
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null && pwd)"
+  for dir in "${SCRIPT_DIR%/tools}" "$HOME/openpilot" "/data/openpilot"; do
     if [[ -f "$dir/launch_openpilot.sh" ]]; then
       OPENPILOT_ROOT="$dir"
       return 0
@@ -161,9 +177,9 @@ function op_check_python() {
     loge "ERROR_PYTHON_NOT_FOUND"
     return 1
   else
-    LB=$(echo $REQUIRED_PYTHON_VERSION | tr -d -c '[0-9,]' | cut -d ',' -f1)
-    UB=$(echo $REQUIRED_PYTHON_VERSION | tr -d -c '[0-9,]' | cut -d ',' -f2)
-    VERSION=$(echo $INSTALLED_PYTHON_VERSION | grep -o '[0-9]\+\.[0-9]\+' | tr -d -c '[0-9]')
+    LB=$(echo $REQUIRED_PYTHON_VERSION | tr -d '",' | awk '{ split($4, v, "."); printf "%d%02d%02d", v[1], v[2], v[3] }')
+    UB=$(echo $REQUIRED_PYTHON_VERSION | tr -d '",' | awk '{ split($6, v, "."); printf "%d%02d%02d", v[1], v[2], v[3] }')
+    VERSION=$(echo $INSTALLED_PYTHON_VERSION | awk '{ split($2, v, "."); printf "%d%02d%02d", v[1], v[2], v[3] }')
     if [[ $VERSION -ge LB && $VERSION -lt UB ]]; then
       echo -e " ↳ [${GREEN}✔${NC}] $INSTALLED_PYTHON_VERSION detected."
     else
@@ -216,11 +232,7 @@ function op_setup() {
 
   echo "Installing dependencies..."
   st="$(date +%s)"
-  if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    SETUP_SCRIPT="tools/ubuntu_setup.sh"
-  elif [[ "$OSTYPE" == "darwin"* ]]; then
-    SETUP_SCRIPT="tools/mac_setup.sh"
-  fi
+  SETUP_SCRIPT="tools/setup_dependencies.sh"
   if ! $OPENPILOT_ROOT/$SETUP_SCRIPT; then
     echo -e " ↳ [${RED}✗${NC}] Dependencies installation failed!"
     loge "ERROR_DEPENDENCIES_INSTALLATION"
@@ -229,9 +241,11 @@ function op_setup() {
   et="$(date +%s)"
   echo -e " ↳ [${GREEN}✔${NC}] Dependencies installed successfully in $((et - st)) seconds."
 
+  op_activate_venv
+
   echo "Getting git submodules..."
   st="$(date +%s)"
-  if ! git submodule update --filter=blob:none --jobs 4 --init --recursive; then
+  if ! retry 3 git submodule update --jobs 4 --init --recursive; then
     echo -e " ↳ [${RED}✗${NC}] Getting git submodules failed!"
     loge "ERROR_GIT_SUBMODULES"
     return 1
@@ -241,7 +255,7 @@ function op_setup() {
 
   echo "Pulling git lfs files..."
   st="$(date +%s)"
-  if ! git lfs pull; then
+  if ! retry 3 git lfs pull; then
     echo -e " ↳ [${RED}✗${NC}] Pulling git lfs files failed!"
     loge "ERROR_GIT_LFS"
     return 1
@@ -254,7 +268,7 @@ function op_setup() {
 
 function op_auth() {
   op_before_cmd
-  op_run_command tools/lib/auth.py
+  op_run_command tools/lib/auth.py "$@"
 }
 
 function op_activate_venv() {
@@ -262,6 +276,11 @@ function op_activate_venv() {
   set +e
   source $OPENPILOT_ROOT/.venv/bin/activate &> /dev/null || true
   set -e
+
+  # persist venv on PATH across GitHub Actions steps
+  if [ -n "$GITHUB_PATH" ]; then
+    echo "$OPENPILOT_ROOT/.venv/bin" >> "$GITHUB_PATH"
+  fi
 }
 
 function op_venv() {
@@ -284,13 +303,36 @@ function op_venv() {
 
 function op_adb() {
   op_before_cmd
-  op_run_command tools/scripts/adb_ssh.sh
+  op_run_command tools/scripts/adb_ssh.sh "$@"
+}
+
+function op_ssh() {
+  op_before_cmd
+  op_run_command tools/scripts/ssh.py "$@"
+}
+
+function op_script() {
+  op_before_cmd
+
+  case $1 in
+    som-debug )  op_run_command panda/scripts/som_debug.sh "${@:2}" ;;
+    * )
+      echo -e "Unknown script '$1'. Available scripts:"
+      echo -e "  ${BOLD}som-debug${NC}    SOM serial debug console via panda"
+      return 1
+      ;;
+  esac
 }
 
 function op_check() {
   VERBOSE=1
   op_before_cmd
   unset VERBOSE
+}
+
+function op_esim() {
+  op_before_cmd
+  op_run_command system/hardware/esim.py "$@"
 }
 
 function op_build() {
@@ -355,9 +397,12 @@ function op_switch() {
   fi
   BRANCH="$1"
 
+  git config --replace-all remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
+  git submodule deinit --all --force
   git fetch "$REMOTE" "$BRANCH"
   git checkout -f FETCH_HEAD
   git checkout -B "$BRANCH" --track "$REMOTE"/"$BRANCH"
+  git submodule deinit --all --force
   git reset --hard "${REMOTE}/${BRANCH}"
   git clean -df
   git submodule update --init --recursive
@@ -392,6 +437,7 @@ function op_default() {
   echo -e "${BOLD}${UNDERLINE}Commands [System]:${NC}"
   echo -e "  ${BOLD}auth${NC}         Authenticate yourself for API use"
   echo -e "  ${BOLD}check${NC}        Check the development environment (git, os, python) to start using openpilot"
+  echo -e "  ${BOLD}esim${NC}         Manage eSIM profiles on your comma device"
   echo -e "  ${BOLD}venv${NC}         Activate the python virtual environment"
   echo -e "  ${BOLD}setup${NC}        Install openpilot dependencies"
   echo -e "  ${BOLD}build${NC}        Run the openpilot build system in the current working directory"
@@ -406,6 +452,10 @@ function op_default() {
   echo -e "  ${BOLD}cabana${NC}       Run Cabana"
   echo -e "  ${BOLD}clip${NC}         Run clip (linux only)"
   echo -e "  ${BOLD}adb${NC}          Run adb shell"
+  echo -e "  ${BOLD}ssh${NC}          comma prime SSH helper"
+  echo ""
+  echo -e "${BOLD}${UNDERLINE}Commands [Scripts]:${NC}"
+  echo -e "  ${BOLD}script${NC}       Run a script (e.g. op script som-debug)"
   echo ""
   echo -e "${BOLD}${UNDERLINE}Commands [Testing]:${NC}"
   echo -e "  ${BOLD}sim${NC}          Run openpilot in a simulator"
@@ -448,6 +498,7 @@ function _op() {
     auth )          shift 1; op_auth "$@" ;;
     venv )          shift 1; op_venv "$@" ;;
     check )         shift 1; op_check "$@" ;;
+    esim )          shift 1; op_esim "$@" ;;
     setup )         shift 1; op_setup "$@" ;;
     build )         shift 1; op_build "$@" ;;
     juggle )        shift 1; op_juggle "$@" ;;
@@ -464,6 +515,8 @@ function _op() {
     restart )       shift 1; op_restart "$@" ;;
     post-commit )   shift 1; op_install_post_commit "$@" ;;
     adb )           shift 1; op_adb "$@" ;;
+    ssh )           shift 1; op_ssh "$@" ;;
+    script )        shift 1; op_script "$@" ;;
     * ) op_default "$@" ;;
   esac
 }

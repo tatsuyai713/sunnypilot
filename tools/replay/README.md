@@ -19,7 +19,7 @@ You can replay a route from your comma account by specifying the route name.
 tools/replay/replay <route-name>
 
 # Example:
-tools/replay/replay 'a2a0ccea32023010|2023-07-27--13-01-19'
+tools/replay/replay '5beb9b58bd12b691/0000010a--a51155e496'
 
 # Replay the default demo route:
 tools/replay/replay --demo
@@ -34,10 +34,10 @@ tools/replay/replay <route-name> --data_dir="/path_to/route"
 
 # Example:
 # If you have a local route stored at /path_to_routes with segments like:
-# a2a0ccea32023010|2023-07-27--13-01-19--0
-# a2a0ccea32023010|2023-07-27--13-01-19--1
+# 5beb9b58bd12b691/0000010a--a51155e496--0
+# 5beb9b58bd12b691/0000010a--a51155e496--1
 # You can replay it like this:
-tools/replay/replay "a2a0ccea32023010|2023-07-27--13-01-19" --data_dir="/path_to_routes"
+tools/replay/replay "5beb9b58bd12b691/0000010a--a51155e496" --data_dir="/path_to_routes"
 ```
 
 ## Send Messages via ZMQ
@@ -75,7 +75,7 @@ Options:
   --qcam                 load qcamera
   --no-hw-decoder        disable HW video decoding
   --no-vipc              do not output video
-  --all                  do output all messages including uiDebug, userFlag.
+  --all                  do output all messages including uiDebug, userBookmark.
                          this may causes issues when used along with UI
 
 Arguments:
@@ -88,15 +88,7 @@ To visualize the replay within the openpilot UI, run the following commands:
 
 ```bash
 tools/replay/replay <route-name>
-cd selfdrive/ui && ./ui
-```
-
-## Try Radar Point Visualization with Rerun
-To visualize radar points, run rp_visualization.py while tools/replay/replay is active.
-
-```bash
-tools/replay/replay <route-name>
-python3 replay/rp_visualization.py
+cd selfdrive/ui && ./ui.py
 ```
 
 ## Work with plotjuggler
@@ -118,7 +110,7 @@ simply replay a route using the `--dcam` and `--ecam` flags:
 cd tools/replay && ./replay --demo --dcam --ecam
 
 # then start watch3
-cd selfdrive/ui && ./watch3
+cd selfdrive/ui && ./watch3.py
 ```
 
 ![](https://i.imgur.com/IeaOdAb.png)

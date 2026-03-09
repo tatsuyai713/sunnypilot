@@ -1,5 +1,6 @@
 from collections import defaultdict
 from collections.abc import Callable
+from typing import cast
 import capnp
 import functools
 import traceback
@@ -22,13 +23,14 @@ MigrationOps = tuple[list[tuple[int, capnp.lib.capnp._DynamicStructReader]], lis
 MigrationFunc = Callable[[list[MessageWithIndex]], MigrationOps]
 
 
-## rules for migration functions
-## 1. must use the decorator @migration(inputs=[...], product="...") and MigrationFunc signature
-## 2. it only gets the messages that are in the inputs list
-## 3. product is the message type created by the migration function, and the function will be skipped if product type already exists in lr
-## 4. it must return a list of operations to be applied to the logreader (replace, add, delete)
-## 5. all migration functions must be independent of each other
-def migrate_all(lr: LogIterable, manager_states: bool = False, panda_states: bool = False, camera_states: bool = False):
+# rules for migration functions
+# 1. must use the decorator @migration(inputs=[...], product="...") and MigrationFunc signature
+# 2. it only gets the messages that are in the inputs list
+# 3. product is the message type created by the migration function, and the function will be skipped if product type already exists in lr
+# 4. it must return a list of operations to be applied to the logreader (replace, add, delete)
+# 5. all migration functions must be independent of each other
+def migrate_all(lr: LogIterable, manager_states: bool = False, panda_states: bool = False, camera_states: bool = False,
+                live_location_kalman: bool = True):
   migrations = [
     migrate_sensorEvents,
     migrate_carParams,
@@ -37,7 +39,6 @@ def migrate_all(lr: LogIterable, manager_states: bool = False, panda_states: boo
     migrate_carOutput,
     migrate_controlsState,
     migrate_carState,
-    migrate_liveLocationKalman,
     migrate_liveTracks,
     migrate_driverAssistance,
     migrate_drivingModelData,
@@ -51,6 +52,8 @@ def migrate_all(lr: LogIterable, manager_states: bool = False, panda_states: boo
     migrations.extend([migrate_pandaStates, migrate_peripheralState])
   if camera_states:
     migrations.append(migrate_cameraStates)
+  if live_location_kalman:
+    migrations.append(migrate_liveLocationKalman)
 
   return migrate(lr, migrations)
 
@@ -67,7 +70,7 @@ def migrate(lr: LogIterable, migration_funcs: list[MigrationFunc]):
     if migration.product in grouped: # skip if product already exists
       continue
 
-    sorted_indices = sorted(ii for i in migration.inputs for ii in grouped[i])
+    sorted_indices = sorted(ii for i in cast(list[str], migration.inputs) for ii in grouped.get(i, []))
     msg_gen = [(i, lr[i]) for i in sorted_indices]
     r_ops, a_ops, d_ops = migration(msg_gen)
     replace_ops.extend(r_ops)
@@ -306,6 +309,8 @@ def migrate_pandaStates(msgs):
     elif msg.which() == 'pandaStates':
       new_msg = msg.as_builder()
       new_msg.pandaStates[-1].safetyParam = safety_param
+      # Clear DISABLE_DISENGAGE_ON_GAS bit to fix controls mismatch
+      new_msg.pandaStates[-1].alternativeExperience &= ~1
       ops.append((index, new_msg.as_reader()))
   return ops, [], []
 

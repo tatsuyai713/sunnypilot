@@ -18,17 +18,11 @@ GearShifter = structs.CarState.GearShifter
 
 
 class CarSpecificEventsSP:
-  def __init__(self, CP: structs.CarParams, params):
+  def __init__(self, CP: structs.CarParams, CP_SP: structs.CarParamsSP):
     self.CP = CP
-    self.params = params
+    self.CP_SP = CP_SP
 
     self.low_speed_alert = False
-    self.hyundai_radar_tracks = self.params.get_bool("HyundaiRadarTracks")
-    self.hyundai_radar_tracks_confirmed = self.params.get_bool("HyundaiRadarTracksConfirmed")
-
-  def read_params(self):
-    self.hyundai_radar_tracks = self.params.get_bool("HyundaiRadarTracks")
-    self.hyundai_radar_tracks_confirmed = self.params.get_bool("HyundaiRadarTracksConfirmed")
 
   def update(self, CS: structs.CarState, events: Events):
     events_sp = EventsSP()
@@ -43,13 +37,15 @@ class CarSpecificEventsSP:
         # TODO-SP: add 1 m/s hysteresis
         if CS.vEgo >= self.CP.minEnableSpeed:
           self.low_speed_alert = False
-        if CS.gearShifter != GearShifter.drive:
+        if self.CP.minEnableSpeed >= 14.5 and CS.gearShifter != GearShifter.drive:
           self.low_speed_alert = True
       if self.low_speed_alert:
         events.add(EventName.belowSteerSpeed)
 
-    if self.CP.brand == 'hyundai':
-      if self.hyundai_radar_tracks and not self.hyundai_radar_tracks_confirmed:
-        events_sp.add(EventNameSP.hyundaiRadarTracksConfirmed)
+    elif self.CP.brand == 'toyota':
+      if self.CP.openpilotLongitudinalControl:
+        if CS.cruiseState.standstill and not CS.brakePressed and self.CP_SP.enableGasInterceptor:
+          if events.has(EventName.resumeRequired):
+            events.remove(EventName.resumeRequired)
 
     return events_sp

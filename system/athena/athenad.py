@@ -23,6 +23,7 @@ from typing import cast
 from collections.abc import Callable
 
 import requests
+from requests.adapters import HTTPAdapter, DEFAULT_POOLBLOCK
 from jsonrpc import JSONRPCResponseManager, dispatcher
 from websocket import (ABNF, WebSocket, WebSocketException, WebSocketTimeoutException,
                        create_connection)
@@ -30,8 +31,8 @@ from websocket import (ABNF, WebSocket, WebSocketException, WebSocketTimeoutExce
 import cereal.messaging as messaging
 from cereal import log
 from cereal.services import SERVICE_LIST
-from openpilot.common.api import Api
-from openpilot.common.file_helpers import CallbackReader, get_upload_stream
+from openpilot.common.api import Api, get_key_pair
+from openpilot.common.utils import CallbackReader, get_upload_stream
 from openpilot.common.params import Params
 from openpilot.common.realtime import set_core_affinity
 from openpilot.system.hardware import HARDWARE, PC
@@ -56,12 +57,28 @@ WS_FRAME_SIZE = 4096
 DEVICE_STATE_UPDATE_INTERVAL = 1.0  # in seconds
 DEFAULT_UPLOAD_PRIORITY = 99  # higher number = lower priority
 
+# https://bytesolutions.com/dscp-tos-cos-precedence-conversion-chart,
+# https://en.wikipedia.org/wiki/Differentiated_services
+UPLOAD_TOS = 0x20  # CS1, low priority background traffic
+SSH_TOS = 0x90  # AF42, DSCP of 36/HDD_LINUX_AC_VI with the minimum delay flag
+
 NetworkType = log.DeviceState.NetworkType
 
 UploadFileDict = dict[str, str | int | float | bool]
 UploadItemDict = dict[str, str | bool | int | float | dict[str, str]]
 
 UploadFilesToUrlResponse = dict[str, int | list[UploadItemDict] | list[str]]
+
+
+class UploadTOSAdapter(HTTPAdapter):
+  def init_poolmanager(self, connections, maxsize, block=DEFAULT_POOLBLOCK, **pool_kwargs):
+    pool_kwargs["socket_options"] = [(socket.IPPROTO_IP, socket.IP_TOS, UPLOAD_TOS)]
+    super().init_poolmanager(connections, maxsize, block, **pool_kwargs)
+
+
+UPLOAD_SESS = requests.Session()
+UPLOAD_SESS.mount("http://", UploadTOSAdapter())
+UPLOAD_SESS.mount("https://", UploadTOSAdapter())
 
 
 @dataclass
@@ -136,7 +153,7 @@ class UploadQueueCache:
     try:
       upload_queue_json = Params().get("AthenadUploadQueue")
       if upload_queue_json is not None:
-        for item in json.loads(upload_queue_json):
+        for item in upload_queue_json:
           upload_queue.put(UploadItem.from_dict(item))
     except Exception:
       cloudlog.exception("athena.UploadQueueCache.initialize.exception")
@@ -146,7 +163,7 @@ class UploadQueueCache:
     try:
       queue: list[UploadItem | None] = list(upload_queue.queue)
       items = [asdict(i) for i in queue if i is not None and (i.id not in cancelled_uploads)]
-      Params().put("AthenadUploadQueue", json.dumps(items))
+      Params().put("AthenadUploadQueue", items)
     except Exception:
       cloudlog.exception("athena.UploadQueueCache.cache.exception")
 
@@ -299,7 +316,7 @@ def upload_handler(end_event: threading.Event) -> None:
       cloudlog.exception("athena.upload_handler.exception")
 
 
-def _do_upload(upload_item: UploadItem, callback: Callable = None) -> requests.Response:
+def _do_upload(upload_item: UploadItem, callback: Callable | None = None) -> requests.Response:
   path = upload_item.path
   compress = False
 
@@ -311,10 +328,10 @@ def _do_upload(upload_item: UploadItem, callback: Callable = None) -> requests.R
   stream = None
   try:
     stream, content_length = get_upload_stream(path, compress)
-    response = requests.put(upload_item.url,
-                            data=CallbackReader(stream, callback, content_length) if callback else stream,
-                            headers={**upload_item.headers, 'Content-Length': str(content_length)},
-                            timeout=30)
+    response = UPLOAD_SESS.put(upload_item.url,
+                               data=CallbackReader(stream, callback, content_length) if callback else stream,
+                               headers={**upload_item.headers, 'Content-Length': str(content_length)},
+                               timeout=30)
     return response
   finally:
     if stream:
@@ -352,7 +369,7 @@ def getVersion() -> dict[str, str]:
 
 
 @dispatcher.add_method
-def setNavDestination(latitude: int = 0, longitude: int = 0, place_name: str = None, place_details: str = None) -> dict[str, int]:
+def setNavDestination(latitude: int = 0, longitude: int = 0, place_name: str | None = None, place_details: str | None = None) -> dict[str, int]:
   destination = {
     "latitude": latitude,
     "longitude": longitude,
@@ -364,20 +381,22 @@ def setNavDestination(latitude: int = 0, longitude: int = 0, place_name: str = N
   return {"success": 1}
 
 
-def scan_dir(path: str, prefix: str) -> list[str]:
+def scan_dir(path: str, prefix: str, base: str | None = None) -> list[str]:
+  if base is None:
+    base = path
   files = []
   # only walk directories that match the prefix
   # (glob and friends traverse entire dir tree)
   with os.scandir(path) as i:
     for e in i:
-      rel_path = os.path.relpath(e.path, Paths.log_root())
+      rel_path = os.path.relpath(e.path, base)
       if e.is_dir(follow_symlinks=False):
         # add trailing slash
         rel_path = os.path.join(rel_path, '')
         # if prefix is a partial dir name, current dir will start with prefix
         # if prefix is a partial file name, prefix with start with dir name
         if rel_path.startswith(prefix) or prefix.startswith(rel_path):
-          files.extend(scan_dir(e.path, prefix))
+          files.extend(scan_dir(e.path, prefix, base))
       else:
         if rel_path.startswith(prefix):
           files.append(rel_path)
@@ -385,7 +404,12 @@ def scan_dir(path: str, prefix: str) -> list[str]:
 
 @dispatcher.add_method
 def listDataDirectory(prefix='') -> list[str]:
-  return scan_dir(Paths.log_root(), prefix)
+  internal_files = scan_dir(Paths.log_root(), prefix, Paths.log_root())
+  try:
+    external_files = scan_dir(Paths.log_root_external(), prefix, Paths.log_root_external())
+  except FileNotFoundError:
+    external_files = []
+  return sorted(set(internal_files + external_files))
 
 
 @dispatcher.add_method
@@ -410,8 +434,13 @@ def uploadFilesToUrls(files_data: list[UploadFileDict]) -> UploadFilesToUrlRespo
       failed.append(file.fn)
       continue
 
-    path = os.path.join(Paths.log_root(), file.fn)
-    if not os.path.exists(path) and not os.path.exists(strip_zst_extension(path)):
+    path_internal = os.path.join(Paths.log_root(), file.fn)
+    path_external = os.path.join(Paths.log_root_external(), file.fn)
+    if os.path.exists(path_internal) or os.path.exists(strip_zst_extension(path_internal)):
+      path = path_internal
+    elif os.path.exists(path_external) or os.path.exists(strip_zst_extension(path_external)):
+      path = path_external
+    else:
       failed.append(file.fn)
       continue
 
@@ -424,7 +453,7 @@ def uploadFilesToUrls(files_data: list[UploadFileDict]) -> UploadFilesToUrlRespo
       path=path,
       url=file.url,
       headers=file.headers,
-      created_at=int(time.time() * 1000),
+      created_at=int(time.time() * 1000),  # noqa: TID251
       id=None,
       allow_cellular=file.allow_cellular,
       priority=file.priority,
@@ -468,7 +497,7 @@ def setRouteViewed(route: str) -> dict[str, int | str]:
   # maintain a list of the last 10 routes viewed in connect
   params = Params()
 
-  r = params.get("AthenadRecentlyViewedRoutes", encoding="utf8")
+  r = params.get("AthenadRecentlyViewedRoutes")
   routes = [] if r is None else r.split(",")
   routes.append(route)
 
@@ -481,7 +510,7 @@ def setRouteViewed(route: str) -> dict[str, int | str]:
 
 def startLocalProxy(global_end_event: threading.Event, remote_ws_uri: str, local_port: int) -> dict[str, int]:
   cloudlog.debug("athena.startLocalProxy.starting")
-  dongle_id = Params().get("DongleId").decode('utf8')
+  dongle_id = Params().get("DongleId")
   identity_token = Api(dongle_id).get_token()
   ws = create_connection(remote_ws_uri, cookie="jwt=" + identity_token, enable_multithread=True)
 
@@ -501,8 +530,7 @@ def start_local_proxy_shim(global_end_event: threading.Event, local_port: int, w
       raise Exception("Requested local port not whitelisted")
 
     # Set TOS to keep connection responsive while under load.
-    # DSCP of 36/HDD_LINUX_AC_VI with the minimum delay flag
-    ws.sock.setsockopt(socket.IPPROTO_IP, socket.IP_TOS, 0x90)
+    ws.sock.setsockopt(socket.IPPROTO_IP, socket.IP_TOS, SSH_TOS)
 
     ssock, csock = socket.socketpair()
     local_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -526,21 +554,18 @@ def start_local_proxy_shim(global_end_event: threading.Event, local_port: int, w
 
 @dispatcher.add_method
 def getPublicKey() -> str | None:
-  if not os.path.isfile(Paths.persist_root() + '/comma/id_rsa.pub'):
-    return None
-
-  with open(Paths.persist_root() + '/comma/id_rsa.pub') as f:
-    return f.read()
+  _, _, public_key = get_key_pair()
+  return public_key
 
 
 @dispatcher.add_method
 def getSshAuthorizedKeys() -> str:
-  return Params().get("GithubSshKeys", encoding='utf8') or ''
+  return cast(str, Params().get("GithubSshKeys") or "")
 
 
 @dispatcher.add_method
 def getGithubUsername() -> str:
-  return Params().get("GithubUsername", encoding='utf8') or ''
+  return cast(str, Params().get("GithubUsername") or "")
 
 @dispatcher.add_method
 def getSimInfo():
@@ -565,7 +590,7 @@ def getNetworks():
 
 @dispatcher.add_method
 def takeSnapshot() -> str | dict[str, str] | None:
-  from openpilot.system.camerad.snapshot.snapshot import jpeg_write, snapshot
+  from openpilot.system.camerad.snapshot import jpeg_write, snapshot
   ret = snapshot()
   if ret is not None:
     def b64jpeg(x):
@@ -583,7 +608,7 @@ def takeSnapshot() -> str | dict[str, str] | None:
 
 def get_logs_to_send_sorted(log_attr_name=LOG_ATTR_NAME) -> list[str]:
   # TODO: scan once then use inotify to detect file creation/deletion
-  curr_time = int(time.time())
+  curr_time = int(time.time())  # noqa: TID251
   logs = []
   for log_entry in os.listdir(Paths.swaglog_root()):
     log_path = os.path.join(Paths.swaglog_root(), log_entry)
@@ -681,7 +706,7 @@ def log_handler(end_event: threading.Event, log_attr_name=LOG_ATTR_NAME) -> None
         log_entry = log_files.pop() # newest log file
         cloudlog.debug(f"athena.log_handler.forward_request {log_entry}")
         try:
-          curr_time = int(time.time())
+          curr_time = int(time.time())  # noqa: TID251
           log_path = os.path.join(Paths.swaglog_root(), log_entry)
           setxattr(log_path, log_attr_name, int.to_bytes(curr_time, 4, sys.byteorder))
 
@@ -716,26 +741,40 @@ def log_handler(end_event: threading.Event, log_attr_name=LOG_ATTR_NAME) -> None
       cloudlog.exception("athena.log_handler.exception")
 
 
-def stat_handler(end_event: threading.Event) -> None:
-  STATS_DIR = Paths.stats_root()
+def stat_handler(end_event: threading.Event, stats_dir=None, is_sunnylink=False) -> None:
+  stats_dir = stats_dir or Paths.stats_root()
   last_scan = 0.0
 
   while not end_event.is_set():
     curr_scan = time.monotonic()
     try:
       if curr_scan - last_scan > 10:
-        stat_filenames = list(filter(lambda name: not name.startswith(tempfile.gettempprefix()), os.listdir(STATS_DIR)))
+        stat_filenames = list(filter(lambda name: not name.startswith(tempfile.gettempprefix()), os.listdir(stats_dir)))
         if len(stat_filenames) > 0:
-          stat_path = os.path.join(STATS_DIR, stat_filenames[0])
+          stat_path = os.path.join(stats_dir, stat_filenames[0])
           with open(stat_path) as f:
+            payload = f.read()
+            is_compressed = False
+
+            # Log the current size of the file
+            if is_sunnylink:
+              # Compress and encode the data if it exceeds the maximum size
+              compressed_data = gzip.compress(payload.encode())
+              payload = base64.b64encode(compressed_data).decode()
+              is_compressed = True
+
             jsonrpc = {
               "method": "storeStats",
               "params": {
-                "stats": f.read()
+                "stats": payload
               },
               "jsonrpc": "2.0",
               "id": stat_filenames[0]
             }
+
+            if is_sunnylink and is_compressed:
+              jsonrpc["params"]["compressed"] = is_compressed
+
             low_priority_send_queue.put_nowait(json.dumps(jsonrpc))
           os.remove(stat_path)
         last_scan = curr_scan
@@ -804,7 +843,7 @@ def ws_recv(ws: WebSocket, end_event: threading.Event) -> None:
         recv_queue.put_nowait(data)
       elif opcode == ABNF.OPCODE_PING:
         last_ping = int(time.monotonic() * 1e9)
-        Params().put("LastAthenaPingTime", str(last_ping))
+        Params().put("LastAthenaPingTime", last_ping)
     except WebSocketTimeoutException:
       ns_since_last_ping = int(time.monotonic() * 1e9) - last_ping
       if ns_since_last_ping > RECONNECT_TIMEOUT_S * 1e9:
@@ -862,14 +901,14 @@ def backoff(retries: int) -> int:
   return random.randrange(0, min(128, int(2 ** retries)))
 
 
-def main(exit_event: threading.Event = None):
+def main(exit_event: threading.Event | None = None):
   try:
     set_core_affinity([0, 1, 2, 3])
   except Exception:
     cloudlog.exception("failed to set core affinity")
 
   params = Params()
-  dongle_id = params.get("DongleId", encoding='utf-8')
+  dongle_id = params.get("DongleId")
   UploadQueueCache.initialize(upload_queue)
 
   ws_uri = ATHENA_HOST + "/ws/v2/" + dongle_id

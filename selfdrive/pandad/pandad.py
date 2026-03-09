@@ -6,16 +6,18 @@ import time
 import signal
 import subprocess
 
-from panda import Panda, PandaDFU, PandaProtocolMismatch, FW_PATH
+from panda import Panda, PandaDFU, PandaProtocolMismatch, McuType, FW_PATH
 from openpilot.common.basedir import BASEDIR
 from openpilot.common.params import Params
 from openpilot.system.hardware import HARDWARE
 from openpilot.common.swaglog import cloudlog
 
+from openpilot.sunnypilot.selfdrive.pandad.rivian_long_flasher import flash_rivian_long
 
-def get_expected_signature(panda: Panda) -> bytes:
+
+def get_expected_signature() -> bytes:
   try:
-    fn = os.path.join(FW_PATH, panda.get_mcu_type().config.app_fn)
+    fn = os.path.join(FW_PATH, McuType.H7.config.app_fn)
     return Panda.get_signature_from_firmware(fn)
   except Exception:
     cloudlog.exception("Error computing expected signature")
@@ -29,7 +31,12 @@ def flash_panda(panda_serial: str) -> Panda:
     HARDWARE.recover_internal_panda()
     raise
 
-  fw_signature = get_expected_signature(panda)
+  # skip flashing if the detected panda is not supported
+  if panda.get_type() not in Panda.SUPPORTED_DEVICES:
+    cloudlog.warning(f"Panda {panda_serial} is not supported (hw_type: {panda.get_type()}), skipping flash...")
+    return panda
+
+  fw_signature = get_expected_signature()
   internal_panda = panda.is_internal()
 
   panda_version = "bootstub" if panda.bootstub else panda.get_version()
@@ -61,6 +68,23 @@ def flash_panda(panda_serial: str) -> Panda:
   return panda
 
 
+def check_panda_support(panda_serials: list[str]) -> bool:
+  unsupported = []
+  for serial in panda_serials:
+    panda = Panda(serial)
+    hw_type = panda.get_type()
+    panda.close()
+    if hw_type in Panda.SUPPORTED_DEVICES:
+      return True
+
+    unsupported.append((serial, hw_type))
+
+  for serial, hw_type in unsupported:
+    cloudlog.warning(f"Panda {serial} is not supported (hw_type: {hw_type}), skipping...")
+
+  return False
+
+
 def main() -> None:
   # signal pandad to close the relay and exit
   def signal_handler(signum, frame):
@@ -84,11 +108,6 @@ def main() -> None:
       count += 1
       cloudlog.event("pandad.flash_and_connect", count=count)
       params.remove("PandaSignatures")
-
-      # TODO: remove this in the next AGNOS
-      # wait until USB is up before counting
-      if time.monotonic() < 25.:
-        no_internal_panda_count = 0
 
       # Handle missing internal panda
       if no_internal_panda_count > 0:
@@ -115,46 +134,42 @@ def main() -> None:
 
       cloudlog.info(f"{len(panda_serials)} panda(s) found, connecting - {panda_serials}")
 
-      # Flash pandas
-      pandas: list[Panda] = []
-      for serial in panda_serials:
-        pandas.append(flash_panda(serial))
+      # custom flasher for xnor's Rivian Longitudinal Upgrade Kit
+      flash_rivian_long(panda_serials)
+
+      # skip flashing and health check if no supported panda is detected
+      if not check_panda_support(panda_serials):
+        continue
+
+      # Flash the first panda
+      panda_serial = panda_serials[0]
+      panda = flash_panda(panda_serial)
 
       # Ensure internal panda is present if expected
-      internal_pandas = [panda for panda in pandas if panda.is_internal()]
-      if HARDWARE.has_internal_panda() and len(internal_pandas) == 0:
+      if HARDWARE.has_internal_panda() and not panda.is_internal():
         cloudlog.error("Internal panda is missing, trying again")
         no_internal_panda_count += 1
         continue
       no_internal_panda_count = 0
 
-      # sort pandas to have deterministic order
-      # * the internal one is always first
-      # * then sort by hardware type
-      # * as a last resort, sort by serial number
-      pandas.sort(key=lambda x: (not x.is_internal(), x.get_type(), x.get_usb_serial()))
-      panda_serials = [p.get_usb_serial() for p in pandas]
+      # log panda fw version
+      params.put("PandaSignatures", panda.get_signature())
 
-      # log panda fw versions
-      params.put("PandaSignatures", b','.join(p.get_signature() for p in pandas))
+      # check health for lost heartbeat
+      health = panda.health()
+      if health["heartbeat_lost"]:
+        params.put_bool("PandaHeartbeatLost", True)
+        cloudlog.event("heartbeat lost", deviceState=health, serial=panda.get_usb_serial())
+      if health["som_reset_triggered"]:
+        params.put_bool("PandaSomResetTriggered", True)
+        cloudlog.event("panda.som_reset_triggered", health=health, serial=panda.get_usb_serial())
 
-      for panda in pandas:
-        # check health for lost heartbeat
-        health = panda.health()
-        if health["heartbeat_lost"]:
-          params.put_bool("PandaHeartbeatLost", True)
-          cloudlog.event("heartbeat lost", deviceState=health, serial=panda.get_usb_serial())
-        if health["som_reset_triggered"]:
-          params.put_bool("PandaSomResetTriggered", True)
-          cloudlog.event("panda.som_reset_triggered", health=health, serial=panda.get_usb_serial())
+      if first_run:
+        # reset panda to ensure we're in a good state
+        cloudlog.info(f"Resetting panda {panda.get_usb_serial()}")
+        panda.reset(reconnect=True)
 
-        if first_run:
-          # reset panda to ensure we're in a good state
-          cloudlog.info(f"Resetting panda {panda.get_usb_serial()}")
-          panda.reset(reconnect=True)
-
-      for p in pandas:
-        p.close()
+      panda.close()
     # TODO: wrap all panda exceptions in a base panda exception
     except (usb1.USBErrorNoDevice, usb1.USBErrorPipe):
       # a panda was disconnected while setting everything up. let's try again
@@ -171,7 +186,7 @@ def main() -> None:
 
     # run pandad with all connected serials as arguments
     os.environ['MANAGER_DAEMON'] = 'pandad'
-    process = subprocess.Popen(["./pandad", *panda_serials], cwd=os.path.join(BASEDIR, "selfdrive/pandad"))
+    process = subprocess.Popen(["./pandad", panda_serial], cwd=os.path.join(BASEDIR, "selfdrive/pandad"))
     process.wait()
 
 

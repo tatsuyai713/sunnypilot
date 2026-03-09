@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <memory>
 #include <set>
 #include <string>
@@ -11,7 +12,7 @@
 #include <QToolBar>
 #include <QTabBar>
 
-#include "selfdrive/ui/qt/widgets/cameraview.h"
+#include "tools/cabana/cameraview.h"
 #include "tools/cabana/utils/util.h"
 #include "tools/replay/logreader.h"
 #include "tools/cabana/streams/replaystream.h"
@@ -47,8 +48,8 @@ private:
   void drawTime(QPainter &p, const QRect &rect, double seconds);
 
   QPropertyAnimation *fade_animation;
-  QMap<uint64_t, QPixmap> big_thumbnails;
-  QMap<uint64_t, QPixmap> thumbnails;
+  std::map<uint64_t, QPixmap> big_thumbnails;
+  std::map<uint64_t, QPixmap> thumbnails;
   double thumbnail_dispaly_time = -1;
   friend class VideoWidget;
 };
@@ -71,6 +72,7 @@ protected:
   void createSpeedDropdown(QToolBar *toolbar);
   void loopPlaybackClicked();
   void vipcAvailableStreamsUpdated(std::set<VisionStreamType> streams);
+  void showRouteInfo();
 
   StreamCameraView *cam_widget;
   QAction *time_display_action = nullptr;

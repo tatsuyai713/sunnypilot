@@ -1,4 +1,3 @@
-#ifndef __APPLE__
 #include <sys/file.h>
 #include <sys/ioctl.h>
 #include <linux/spi/spidev.h>
@@ -33,7 +32,7 @@ const std::string SPI_DEVICE = "/dev/spidev0.0";
 
 class LockEx {
 public:
-  LockEx(int fd, std::recursive_mutex &m) : fd(fd), m(m) {
+  LockEx(int fd_, std::recursive_mutex &m_) : fd(fd_), m(m_) {
     m.lock();
     flock(fd, LOCK_EX);
   }
@@ -55,7 +54,7 @@ private:
          util::hexdump(tx_buf, std::min((int)header.tx_len, 8)).c_str()); \
       } while (0)
 
-PandaSpiHandle::PandaSpiHandle(std::string serial) : PandaCommsHandle(serial) {
+PandaSpiHandle::PandaSpiHandle(std::string serial) {
   int ret;
   const int uid_len = 12;
   uint8_t uid[uid_len] = {0};
@@ -66,58 +65,44 @@ PandaSpiHandle::PandaSpiHandle(std::string serial) : PandaCommsHandle(serial) {
   // 50MHz is the max of the 845. note that some older
   // revs of the comma three may not support this speed
   uint32_t spi_speed = 50000000;
-
-  if (!util::file_exists(SPI_DEVICE)) {
-    goto fail;
-  }
-
-  spi_fd = open(SPI_DEVICE.c_str(), O_RDWR);
-  if (spi_fd < 0) {
-    LOGE("failed opening SPI device %d", spi_fd);
-    goto fail;
-  }
-
-  // SPI settings
-  ret = util::safe_ioctl(spi_fd, SPI_IOC_WR_MODE, &spi_mode);
-  if (ret < 0) {
-    LOGE("failed setting SPI mode %d", ret);
-    goto fail;
-  }
-
-  ret = util::safe_ioctl(spi_fd, SPI_IOC_WR_MAX_SPEED_HZ, &spi_speed);
-  if (ret < 0) {
-    LOGE("failed setting SPI speed");
-    goto fail;
-  }
-
-  ret = util::safe_ioctl(spi_fd, SPI_IOC_WR_BITS_PER_WORD, &spi_bits_per_word);
-  if (ret < 0) {
-    LOGE("failed setting SPI bits per word");
-    goto fail;
-  }
-
-  // get hw UID/serial
-  ret = control_read(0xc3, 0, 0, uid, uid_len, 100);
-  if (ret == uid_len) {
-    std::stringstream stream;
-    for (int i = 0; i < uid_len; i++) {
-      stream << std::hex << std::setw(2) << std::setfill('0') << int(uid[i]);
+  try {
+    if (!util::file_exists(SPI_DEVICE)) {
+      throw std::runtime_error("Error connecting to panda: SPI device not found");
     }
-    hw_serial = stream.str();
-  } else {
-    LOGD("failed to get serial %d", ret);
-    goto fail;
-  }
 
-  if (!serial.empty() && (serial != hw_serial)) {
-    goto fail;
-  }
+    spi_fd = open(SPI_DEVICE.c_str(), O_RDWR);
+    if (spi_fd < 0) {
+      LOGE("failed opening SPI device %d", spi_fd);
+      throw std::runtime_error("Error connecting to panda: failed to open SPI device");
+    }
 
+    // SPI settings
+    util::safe_ioctl(spi_fd, SPI_IOC_WR_MODE, &spi_mode, "failed setting SPI mode");
+    util::safe_ioctl(spi_fd, SPI_IOC_WR_MAX_SPEED_HZ, &spi_speed, "failed setting SPI speed");
+    util::safe_ioctl(spi_fd, SPI_IOC_WR_BITS_PER_WORD, &spi_bits_per_word, "failed setting SPI bits per word");
+
+    // get hw UID/serial
+    ret = control_read(0xc3, 0, 0, uid, uid_len, 100);
+    if (ret == uid_len) {
+      std::stringstream stream;
+      for (int i = 0; i < uid_len; i++) {
+        stream << std::hex << std::setw(2) << std::setfill('0') << int(uid[i]);
+      }
+      hw_serial = stream.str();
+    } else {
+      LOGD("failed to get serial %d", ret);
+      throw std::runtime_error("Error connecting to panda: failed to get serial");
+    }
+
+    if (!serial.empty() && (serial != hw_serial)) {
+      throw std::runtime_error("Error connecting to panda: serial mismatch");
+    }
+
+  } catch (...) {
+    cleanup();
+    throw;
+  }
   return;
-
-fail:
-  cleanup();
-  throw std::runtime_error("Error connecting to panda");
 }
 
 PandaSpiHandle::~PandaSpiHandle() {
@@ -421,4 +406,3 @@ fail:
   if (ret >= 0) ret = -1;
   return ret;
 }
-#endif

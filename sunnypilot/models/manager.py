@@ -8,7 +8,6 @@ See the LICENSE.md file in the root directory for more details.
 import asyncio
 import os
 import time
-import json
 
 import aiohttp
 from openpilot.common.params import Params
@@ -17,8 +16,8 @@ from openpilot.common.swaglog import cloudlog
 from openpilot.system.hardware.hw import Paths
 
 from cereal import messaging, custom
-from sunnypilot.models.fetcher import ModelFetcher
-from sunnypilot.models.helpers import verify_file, get_active_bundle
+from openpilot.sunnypilot.models.fetcher import ModelFetcher
+from openpilot.sunnypilot.models.helpers import verify_file, get_active_bundle
 
 
 class ModelManagerSP:
@@ -63,6 +62,9 @@ class ModelManagerSP:
           async for chunk in response.content.iter_chunked(self._chunk_size):  # type: bytes
             f.write(chunk)
             bytes_downloaded += len(chunk)
+
+            if not self.params.get("ModelManager_DownloadIndex"):
+              raise Exception("Download cancelled")
 
             if total_size > 0:
               progress = (bytes_downloaded / total_size) * 100
@@ -146,7 +148,7 @@ class ModelManagerSP:
       await asyncio.gather(*tasks)
       self.active_bundle = self.selected_bundle
       self.active_bundle.status = custom.ModelManagerSP.DownloadStatus.downloaded
-      self.params.put("ModelManager_ActiveBundle", json.dumps(self.active_bundle.to_dict()))
+      self.params.put("ModelManager_ActiveBundle", self.active_bundle.to_dict())
       self.selected_bundle = None
 
     except Exception:
@@ -169,14 +171,19 @@ class ModelManagerSP:
         self.available_models = self.model_fetcher.get_available_bundles()
         self.active_bundle = get_active_bundle(self.params)
 
-        if index_to_download := self.params.get("ModelManager_DownloadIndex", block=False, encoding="utf-8"):
-          if model_to_download := next((model for model in self.available_models if model.index == int(index_to_download)), None):
+        if (index_to_download := self.params.get("ModelManager_DownloadIndex")) is not None:
+          if model_to_download := next((model for model in self.available_models if model.index == index_to_download), None):
             try:
               self.download(model_to_download, Paths.model_root())
             except Exception as e:
               cloudlog.exception(e)
             finally:
-              self.params.put("ModelManager_DownloadIndex", "")
+              self.params.remove("ModelManager_DownloadIndex")
+              self.selected_bundle = None
+
+        if self.params.get("ModelManager_ClearCache"):
+            self.clear_model_cache()
+            self.params.remove("ModelManager_ClearCache")
 
         self._report_status()
         rk.keep_time()
@@ -185,6 +192,31 @@ class ModelManagerSP:
         cloudlog.exception(f"Error in main thread: {str(e)}")
         rk.keep_time()
 
+  def clear_model_cache(self) -> None:
+    """
+    Clears the model cache directory of all files except those in the active model bundle.
+    """
+
+    # Get list of files used by active model bundle
+    active_files = []
+    if self.active_bundle is not None: # When the default model is active
+      for model in self.active_bundle.models:
+        if hasattr(model, 'artifact') and model.artifact.fileName:
+          active_files.append(model.artifact.fileName)
+        if hasattr(model, 'metadata') and model.metadata.fileName:
+          active_files.append(model.metadata.fileName)
+
+    # Remove all files except active ones
+    model_dir = Paths.model_root()
+    try:
+      for filename in os.listdir(model_dir):
+        if filename not in active_files:
+          file_path = os.path.join(model_dir, filename)
+          if os.path.isfile(file_path):
+            os.remove(file_path)
+      cloudlog.info("Model cache cleared, keeping active model files")
+    except Exception as e:
+      cloudlog.exception(f"Error clearing model cache: {str(e)}")
 
 def main():
   ModelManagerSP().main_thread()

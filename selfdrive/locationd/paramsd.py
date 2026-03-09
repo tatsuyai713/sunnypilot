@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import os
-import json
 import numpy as np
 import capnp
 
@@ -128,8 +127,8 @@ class VehicleParamsLearner:
 
     if not self.active:
       # Reset time when stopped so uncertainty doesn't grow
-      self.kf.filter.set_filter_time(t)  # type: ignore
-      self.kf.filter.reset_rewind()      # type: ignore
+      self.kf.filter.set_filter_time(t)
+      self.kf.filter.reset_rewind()
 
   def get_msg(self, valid: bool, debug: bool = False) -> capnp._DynamicStructBuilder:
     x = self.kf.x
@@ -207,12 +206,11 @@ def migrate_cached_vehicle_params_if_needed(params: Params):
     return
 
   try:
-    last_parameters_dict = json.loads(last_parameters_data_old)
     last_parameters_msg = messaging.new_message('liveParameters')
     last_parameters_msg.liveParameters.valid = True
-    last_parameters_msg.liveParameters.steerRatio = last_parameters_dict['steerRatio']
-    last_parameters_msg.liveParameters.stiffnessFactor = last_parameters_dict['stiffnessFactor']
-    last_parameters_msg.liveParameters.angleOffsetAverageDeg = last_parameters_dict['angleOffsetAverageDeg']
+    last_parameters_msg.liveParameters.steerRatio = last_parameters_data_old['steerRatio']
+    last_parameters_msg.liveParameters.stiffnessFactor = last_parameters_data_old['stiffnessFactor']
+    last_parameters_msg.liveParameters.angleOffsetAverageDeg = last_parameters_data_old['angleOffsetAverageDeg']
     params.put("LiveParametersV2", last_parameters_msg.to_bytes())
   except Exception as e:
     cloudlog.error(f"Failed to perform parameter migration: {e}")
@@ -248,6 +246,7 @@ def retrieve_initial_vehicle_params(params: Params, CP: car.CarParams, replay: b
         retrieve_success = True
     except Exception as e:
       cloudlog.error(f"Failed to retrieve initial values: {e}")
+      params.remove("LiveParametersV2")
 
   if not replay:
     # When driving in wet conditions the stiffness can go down, and then be too low on the next drive

@@ -1,4 +1,5 @@
 #include "common/util.h"
+#include "common/swaglog.h"
 
 #include <sys/ioctl.h>
 #include <sys/stat.h>
@@ -12,6 +13,7 @@
 #include <iomanip>
 #include <random>
 #include <sstream>
+#include <limits>
 
 #ifdef __linux__
 #include <sys/prctl.h>
@@ -78,8 +80,9 @@ std::string read_file(const std::string& fn) {
   std::ifstream f(fn, std::ios::binary | std::ios::in);
   if (f.is_open()) {
     f.seekg(0, std::ios::end);
-    int size = f.tellg();
-    if (f.good() && size > 0) {
+    std::streamsize size = f.tellg();
+    // seekg and tellg on a directory doesn't return pos_type(-1) but max(streamsize)
+    if (f.good() && size > 0 && size < std::numeric_limits<std::streamsize>::max()) {
       std::string result(size, '\0');
       f.seekg(0, std::ios::beg);
       f.read(result.data(), size);
@@ -149,11 +152,16 @@ int safe_fflush(FILE *stream) {
   return ret;
 }
 
-int safe_ioctl(int fd, unsigned long request, void *argp) {
+int safe_ioctl(int fd, unsigned long request, void *argp, const char* exception_msg) {
   int ret;
   do {
     ret = ioctl(fd, request, argp);
   } while ((ret == -1) && (errno == EINTR));
+
+  if (ret == -1 && exception_msg) {
+    LOGE("safe_ioctl error: %s %s(%d) (fd: %d request: %lx argp: %p)", exception_msg, strerror(errno), errno, fd, request, argp);
+    throw std::runtime_error(exception_msg);
+  }
   return ret;
 }
 
@@ -173,9 +181,9 @@ bool file_exists(const std::string& fn) {
 }
 
 static bool createDirectory(std::string dir, mode_t mode) {
-  auto verify_dir = [](const std::string& dir) -> bool {
+  auto verify_dir = [](const std::string& path) -> bool {
     struct stat st = {};
-    return (stat(dir.c_str(), &st) == 0 && (st.st_mode & S_IFMT) == S_IFDIR);
+    return (stat(path.c_str(), &st) == 0 && (st.st_mode & S_IFMT) == S_IFDIR);
   };
   // remove trailing /'s
   while (dir.size() > 1 && dir.back() == '/') {
@@ -280,7 +288,7 @@ std::string strip(const std::string &str) {
 std::string check_output(const std::string& command) {
   char buffer[128];
   std::string result;
-  std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(command.c_str(), "r"), pclose);
+  std::unique_ptr<FILE, int(*)(FILE*)> pipe(popen(command.c_str(), "r"), pclose);
 
   if (!pipe) {
     return "";
@@ -295,7 +303,7 @@ std::string check_output(const std::string& command) {
 
 bool system_time_valid() {
   // Default to August 26, 2024
-  tm min_tm = {.tm_year = 2024 - 1900, .tm_mon = 7, .tm_mday = 26};
+  tm min_tm = {.tm_mday = 26, .tm_mon = 7, .tm_year = 2024 - 1900};
   time_t min_date = mktime(&min_tm);
 
   struct stat st;
