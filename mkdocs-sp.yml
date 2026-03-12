@@ -42,8 +42,14 @@ theme:
     - navigation.tabs
     - navigation.tabs.sticky
     - navigation.sections
-    - navigation.expand
+    - navigation.prune
+    - navigation.indexes
+    - navigation.path
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.tracking
     - navigation.top
+    - toc.follow
     - search.suggest
     - search.highlight
     - content.tabs.link
@@ -88,13 +94,16 @@ plugins:
 nav:
   - Home: index.md
   - Getting Started:
+      - getting-started/index.md
       - What is sunnypilot?: getting-started/what-is-sunnypilot.md
       - Use sunnypilot in a car: getting-started/use-sunnypilot-in-a-car.md
-      - Setup:
-          - Read before installing: setup/read-before-installing.md
-          - URL Method: setup/url-method.md
-          - SSH Method: setup/ssh-method.md
+  - Installation:
+      - setup/index.md
+      - Read Before Installing: setup/read-before-installing.md
+      - URL Method: setup/url-method.md
+      - SSH Method: setup/ssh-method.md
   - Features:
+      - features/index.md
       - Cruise Control:
           - Intelligent Cruise Button Management: features/icbm.md
           - Smart Cruise Control - Vision: features/scc-v.md
@@ -113,7 +122,8 @@ nav:
           - HUD & Visuals: features/hud-visuals.md
       - Models & AI: features/models.md
       - OSM Maps: features/osm-maps.md
-  - Settings Reference:
+  - Settings:
+      - settings/index.md
       - Cruise Control: settings/cruise.md
       - Speed Limit: settings/speed-limit.md
       - Steering: settings/steering.md
@@ -132,23 +142,26 @@ nav:
           - Toyota: settings/vehicle/toyota.md
           - Hyundai: settings/vehicle/hyundai.md
           - Subaru: settings/vehicle/subaru.md
-  - Community:
-      - Contributing: community/contributing.md
-      - Workflow: community/workflow.md
-      - Reporting a Bug: community/reporting-a-bug.md
-      - Community Forum: https://community.sunnypilot.ai
   - How-To Guides:
+      - how-to/index.md
       - Share a Route: how-to/share-a-route.md
       - Preserve Local File Changes: how-to/preserve-local-changes.md
   - Safety:
+      - safety/index.md
       - Safety Information: safety/safety.md
       - Driver Responsibility & L2 ADAS: safety/driver-responsibility.md
       - Prohibited Modifications: safety/prohibited-modifications.md
   - Technical Reference:
+      - technical/index.md
       - Hyundai Longitudinal Tuning: technical/hyundai-longitudinal-tuning.md
-  - References:
       - Recommended Branches: references/recommended-branches.md
       - Branch Definitions: references/branch-definitions.md
+  - Community:
+      - community/index.md
+      - Contributing: community/contributing.md
+      - Workflow: community/workflow.md
+      - Reporting a Bug: community/reporting-a-bug.md
+      - Community Forum: https://community.sunnypilot.ai
 
 extra:
   social:

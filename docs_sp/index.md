@@ -10,20 +10,28 @@ Welcome to the official sunnypilot documentation. Find everything you need to ge
 
 <div class="grid cards" markdown>
 
-- :material-rocket-launch: **[Getting Started](getting-started/what-is-sunnypilot.md)**
+- :material-rocket-launch: **[Getting Started](getting-started/index.md)**
 
-    Learn what sunnypilot is and how to set it up
+    Learn what sunnypilot is and how to get set up
 
-- :material-cog: **[Settings Reference](settings/cruise.md)**
+- :material-download: **[Installation](setup/index.md)**
 
-    Complete guide to every configurable option
+    Install sunnypilot on your comma device
 
-- :material-car: **[Features](features/mads.md)**
+- :material-car: **[Features](features/index.md)**
 
     Explore all features and how they work
 
-- :material-shield: **[Safety](safety/safety.md)**
+- :material-cog: **[Settings](settings/index.md)**
+
+    Complete guide to every configurable option
+
+- :material-shield: **[Safety](safety/index.md)**
 
     Important safety information for all users
+
+- :material-account-group: **[Community](community/index.md)**
+
+    Get involved and connect with other users
 
 </div>
