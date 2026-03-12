@@ -58,4 +58,4 @@ Based on these signals, DEC switches between:
 
 ## Settings Reference
 
-See [Cruise Control Settings](../settings/cruise.md) for configuration details.
+See [Cruise Control Settings](../../settings/cruise/index.md) for configuration details.

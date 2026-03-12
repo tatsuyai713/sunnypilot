@@ -124,5 +124,5 @@ The tuning system uses several categories of parameters:
 
 ## Related Pages
 
-- [Cruise Control Settings](../settings/cruise.md) — User-facing cruise control configuration
+- [Cruise Control Settings](../settings/cruise/index.md) — User-facing cruise control configuration
 - [Hyundai Vehicle Settings](../settings/vehicle/hyundai.md) — Hyundai-specific settings reference

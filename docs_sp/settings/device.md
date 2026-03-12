@@ -4,134 +4,134 @@ title: Device Settings
 
 # Device Settings
 
-Configure device-level behavior including power management, upload settings, and boot options.
+View device information, manage calibration, configure power behavior, and access system utilities.
 
-**Location:** Settings → sunnypilot → Device
+**Location**: `Settings -> Device`
+
+!!! device-support "Supported Devices"
+    :material-check: comma 3X/3 &nbsp; :material-check: sunnylink &nbsp; :material-check: comma four
+
+---
+
+## Device Information
+
+The top of the panel displays your device's **Dongle ID** and **Serial** number. These identifiers are used for pairing and support.
+
+---
+
+## Pair Device
+
+Pairs your comma device with your comma connect account. Once paired, you can view driving routes, manage the device remotely, and access dashcam footage through the comma connect app.
+
+---
+
+## Reset Calibration
+
+Resets the device's calibration data. After reset, the system will re-learn the camera's mounting position during your next drive. The current calibration status is shown in the description text.
+
+---
+
+## Change Language
+
+Opens a language selection dialog where you can choose the display language for the interface.
+
+---
+
+## Enable Always Offroad / Exit Always Offroad
+
+Toggles "Always Offroad" mode. When enabled, the device stays in its offroad (parked) state even when the vehicle is running. This is useful for configuring settings or downloading updates without driving. The button text changes based on the current state.
+
+---
+
+## Wake Up Behavior
+
+A row of two buttons that controls what the device does when it wakes up:
+
+| Option | What it does |
+|--------|-------------|
+| **Default** | Device boots normally and enters the driving screen |
+| **Offroad** | Device boots directly into offroad (settings) mode |
 
 ---
 
 ## Max Time Offroad
 
-| Property | Value |
-|----------|-------|
-| **Param** | `MaxTimeOffroad` |
-| **Type** | Option selector |
-| **Range** | 0–11 |
-| **Default** | 0 |
-
-Controls how long the device stays powered on after the vehicle is turned off (offroad). Useful for preserving battery or keeping the device ready for quick starts.
-
-| Value | Duration |
-|-------|----------|
-| 0 | Immediate shutdown |
-| 1 | 5 minutes |
-| 2 | 15 minutes |
-| 3 | 30 minutes |
-| 4 | 1 hour |
-| 5 | 2 hours |
-| 6 | 3 hours |
-| 7 | 6 hours |
-| 8 | 12 hours |
-| 9 | 24 hours |
-| 10 | 48 hours |
-| 11 | 30 hours (1800 minutes) |
-
----
-
-## Device Boot Mode
-
-| Property | Value |
-|----------|-------|
-| **Param** | `DeviceBootMode` |
-| **Type** | Multi-button selector |
-| **Options** | Default · Offroad |
-| **Default** | Default |
-
-Controls the device's boot behavior:
-
-| Mode | Behavior |
-|------|----------|
-| **Default** | Normal boot process — device initializes all driving systems on start |
-| **Offroad** | Boot into offroad-only mode — useful for configuration and updates without driving |
+A selector that sets how long the device stays powered on after the engine is turned off before automatically shutting down. Values range from 5 minutes to 30 hours, or **Always On** to prevent auto-shutdown.
 
 ---
 
 ## Quiet Mode
 
-| Property | Value |
-|----------|-------|
-| **Param** | `QuietMode` |
-| **Type** | Dual-button toggle |
-| **Default** | Off |
-
-Silences non-critical audible alerts from the device. Safety-critical alerts are never silenced.
-
----
-
-## Onroad Uploads
-
-| Property | Value |
-|----------|-------|
-| **Param** | `OnroadUploads` |
-| **Type** | Dual-button toggle |
-| **Default** | Off |
-
-When enabled, allows the device to upload driving data (logs, video segments) while you're actively driving. When disabled, uploads only occur while parked.
-
----
-
-## Always Offroad
-
-| Property | Value |
-|----------|-------|
-| **Param** | `OffroadMode` |
-| **Type** | Button |
-| **Default** | N/A |
-
-Forces the device into offroad mode, even if the vehicle is running. This is useful for changing settings that require the device to be offroad (like torque tuning or NNLC).
-
-!!! tip
-    Some vehicle-specific settings (e.g., Tesla Cooperative Steering, Subaru Stop and Go) require the device to be offroad. Use this button to access those settings without turning off the vehicle.
-
----
-
-## Reset Settings
-
-| Property | Value |
-|----------|-------|
-| **Type** | Button (double confirmation) |
-
-Resets all sunnypilot-specific settings to their default values. Requires a second confirmation tap to execute. Does not affect upstream openpilot settings or calibration data.
-
-!!! warning
-    This action cannot be undone. Consider creating a sunnylink backup before resetting.
+Toggles quiet mode on or off. When enabled, the device suppresses non-critical sounds. Safety-critical alerts are never silenced.
 
 ---
 
 ## Driver Camera Preview
 
-| Property | Value |
-|----------|-------|
-| **Type** | Button |
+Opens a live preview of the driver-facing camera so you can verify its position and angle.
 
-Opens a live preview of the driver-facing camera. Useful for verifying camera alignment and driver monitoring positioning.
+!!! note "Availability"
+    Disabled while the vehicle is onroad.
+
+---
+
+## Onroad Uploads
+
+Toggles data uploads while driving. When enabled, the device uploads driving segments over a cellular or Wi-Fi connection during your drive instead of waiting until parked.
+
+---
+
+## Training Guide
+
+Opens the sunnypilot training guide, which walks through the system's rules, features, and limitations.
+
+!!! note "Availability"
+    Disabled while the vehicle is onroad.
+
+---
+
+## Regulatory
+
+Displays FCC regulatory information for the device.
+
+!!! note "Availability"
+    Disabled while the vehicle is onroad.
+
+---
+
+## Reset Settings
+
+Resets all sunnypilot settings to their defaults. This is a two-step confirmation to prevent accidental resets. After confirmation, the device reboots.
+
+!!! warning
+    This action cannot be undone. All custom settings will be lost.
+
+!!! note "Availability"
+    Disabled while the vehicle is onroad.
 
 ---
 
 ## Reboot / Power Off
 
-| Property | Value |
-|----------|-------|
-| **Type** | Buttons |
+**Reboot** restarts the device. **Power Off** shuts the device down completely.
 
-Standard device power management buttons for rebooting or shutting down the device.
+Power Off is hidden while the vehicle is onroad to prevent accidental shutdown during driving.
 
 ---
 
-## Regulatory / Training Guide
+## Platform Differences
 
-| Property | Value |
-|----------|-------|
-| **Type** | Buttons |
+On **comma four**, the Device panel has a simplified layout with these items:
 
-Access regulatory information and the interactive training guide that walks through sunnypilot's driving assist features and safety requirements.
+- Device ID and Serial (info display)
+- Update sunnypilot
+- Pair
+- Review Training Guide
+- Driver Camera Preview
+- Terms & Conditions
+- Regulatory Info
+- Reset Calibration
+- Uninstall sunnypilot
+- Reboot / Power Off (circle buttons)
+
+The comma four panel does not include: Always Offroad, Wake Up Behavior, Max Time Offroad, Quiet Mode, Onroad Uploads, Reset Settings, or Change Language.

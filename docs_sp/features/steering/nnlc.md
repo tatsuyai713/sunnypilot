@@ -55,4 +55,4 @@ These two features are mutually exclusive — enabling one automatically disable
 
 ## Settings Reference
 
-See [Steering Settings](../settings/steering.md) for configuration details.
+See [Steering Settings](../../settings/steering/index.md) for configuration details.

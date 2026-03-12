@@ -33,4 +33,4 @@ Look for the Blinker Pause Lateral Control toggle and its sub-settings.
 
 ## Settings Reference
 
-See [Steering Settings](../settings/steering.md) for all configuration options.
+See [Steering Settings](../../settings/steering/index.md) for all configuration options.

@@ -1,79 +1,68 @@
 ---
-title: OSM Maps Settings
+title: OSM Settings
 ---
 
-# OSM Maps Settings
+# OSM Settings
 
-Manage OpenStreetMap (OSM) data used for speed limit information, curve detection, and other map-aware features.
+Download and manage OpenStreetMap (OSM) data used for speed limit lookups, curve detection, and road name display.
 
-**Location:** Settings → sunnypilot → OSM Maps
+**Location**: `Settings -> OSM`
 
----
-
-## Overview
-
-The OSM Maps panel provides tools for downloading and managing offline map data. Unlike other settings panels, this section is primarily action-based rather than toggle-based.
+!!! device-support "Supported Devices"
+    :material-check: comma 3X/3 &nbsp; :material-check: sunnylink &nbsp; :material-close: comma four
 
 ---
 
-## Country Selection
+## Mapd Version
 
-Select the country for which you want to download map data. This sets the regional map database used by sunnypilot for speed limit lookups and road information.
-
-| Property | Value |
-|----------|-------|
-| **Param (state)** | `OsmLocationName`, `OsmLocationTitle` |
-| **Type** | Selector |
+Displays the version of the map processing daemon currently running on the device.
 
 ---
 
-## State Selection (US Only)
+## Downloaded Maps
 
-If you selected the United States as your country, you can further narrow the download to a specific state. This reduces download size and improves performance.
+Shows the current size of downloaded map data. A **DELETE** button removes all downloaded map files to free storage space.
 
-| Property | Value |
-|----------|-------|
-| **Param (state)** | `OsmStateName`, `OsmStateTitle` |
-| **Type** | Selector |
-| **Visibility** | Only shown when country is United States |
+!!! note "Availability"
+    The delete button is disabled while a map download is in progress.
+
+---
+
+## Downloading Map
+
+A progress indicator that appears only while a map download or database check is active. Shows the download percentage and the file being downloaded.
 
 ---
 
 ## Database Update
 
-Check for and download updates to your selected region's OSM map data.
+A **CHECK** button that checks for updates to your selected region's OSM database. After checking, it downloads any available updates. The description shows the last check time or current download progress.
 
-| Property | Value |
-|----------|-------|
-| **Param (state)** | `OsmDbUpdatesCheck` |
-| **Type** | Action button |
+!!! note "Availability"
+    Only appears when a country has been selected. Disabled while a download is in progress.
 
 ---
 
-## Delete Maps
+## Country
 
-Remove all downloaded map data from the device to free up storage space.
+A **SELECT** button that opens a country selection dialog. Choose the country for which you want to download map data. The currently selected country is displayed.
 
-| Property | Value |
-|----------|-------|
-| **Type** | Action button |
+!!! note "Availability"
+    Disabled while a download is in progress.
 
 ---
 
-## Status Information
+## State
 
-The panel displays the following read-only information:
+A **SELECT** button that opens a US state selection dialog. Narrows the download to a specific state, reducing download size and improving performance.
 
-| Field | Param | Description |
-|-------|-------|-------------|
-| **Local Maps** | `OsmLocal` | Whether map data is stored locally |
-| **Last Downloaded** | `OsmDownloadedDate` | When the map data was last downloaded |
-| **Map Daemon Version** | `MapdVersion` | Version of the map processing daemon |
+!!! note "Availability"
+    Only appears when the selected country is the United States. Disabled while a download is in progress.
 
 ---
 
 ## Related Features
 
-- [OSM Maps](../features/osm-maps.md)
-- [Speed Limit Assist](../features/speed-limit.md)
-- [Smart Cruise Control — Map](../features/scc-m.md)
+- [OSM Maps](../features/connected/osm-maps.md)
+- [Speed Limit Assist](../features/cruise/speed-limit.md)
+- [Smart Cruise Control - Map](../features/cruise/scc-m.md)

@@ -74,4 +74,4 @@ When ICBM is enabled, the following features become available even on vehicles w
 
 ## Settings Reference
 
-See [Cruise Control Settings](../settings/cruise.md) for all available options.
+See [Cruise Control Settings](../../settings/cruise/index.md) for all available options.

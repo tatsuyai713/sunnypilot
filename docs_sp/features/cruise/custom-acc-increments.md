@@ -25,4 +25,4 @@ Customize the speed increments when you press the cruise control buttons. Instea
 
 ## Settings Reference
 
-See [Cruise Control Settings](../settings/cruise.md) for all increment options.
+See [Cruise Control Settings](../../settings/cruise/index.md) for all increment options.

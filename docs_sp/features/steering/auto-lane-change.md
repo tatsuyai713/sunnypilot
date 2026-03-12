@@ -53,7 +53,7 @@ If your vehicle supports BSM and the BSM Delay option is enabled, the system che
 
 ## Settings Reference
 
-See [Lane Change Settings](../settings/lane-change.md) for all options.
+See [Lane Change Settings](../../settings/steering/lane-change.md) for all options.
 
 !!! warning "Safety"
     Always check your mirrors and blind spots before initiating a lane change. The system assists but does not replace driver awareness.

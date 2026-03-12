@@ -4,64 +4,49 @@ title: Display Settings
 
 # Display Settings
 
-Control screen brightness, timeout, and interactivity behavior while driving.
+Control screen brightness, timing, and UI behavior for the onroad display.
 
-**Location:** Settings → sunnypilot → Display
+**Location**: `Settings -> Display`
+
+!!! device-support "Supported Devices"
+    :material-check: comma 3X/3 &nbsp; :material-check: sunnylink &nbsp; :material-close: comma four
 
 ---
 
-## Onroad Screen Off Brightness
+## Onroad Brightness
 
-| Property | Value |
-|----------|-------|
-| **Param** | `OnroadScreenOffBrightness` |
-| **Type** | Option selector |
-| **Range** | 0–22 |
-| **Default** | 0 (Auto) |
+A selector that controls the screen brightness while driving. Use the **-** and **+** buttons to cycle through the options:
 
-Controls the screen brightness level when the display times out during driving.
-
-| Value | Label | Behavior |
-|-------|-------|----------|
-| 0 | Auto | Adjusts brightness automatically based on ambient conditions |
-| 1 | Auto Dark | Same as Auto, but dims more aggressively |
-| 2 | Screen Off | Turns the screen completely off |
-| 3–22 | 5%–100% | Fixed brightness percentage (increments of 5%) |
+| Option | What it does |
+|--------|-------------|
+| **Auto (Default)** | Adjusts brightness automatically based on ambient light |
+| **Auto (Dark)** | Adjusts automatically but biased toward a darker screen |
+| **Screen Off** | Turns the screen off completely after the delay period |
+| **0% - 100%** | Fixed brightness level in 5% increments |
 
 ---
 
 ## Onroad Brightness Delay
 
-| Property | Value |
-|----------|-------|
-| **Param** | `OnroadScreenOffTimer` |
-| **Type** | Option selector |
-| **Range** | 0–15 |
-| **Default** | 0 |
+A selector that sets how long the screen stays at full brightness before the selected brightness mode takes effect. Available delay values range from seconds to minutes.
 
-Sets how long the screen stays at full brightness before dimming to the "Screen Off Brightness" level. The values map to specific time durations.
-
-!!! info "Requirements"
-    - This setting is disabled when **Onroad Screen Off Brightness** is set to Auto or Auto Dark (values 0 or 1), since those modes manage brightness continuously
+!!! note "Availability"
+    This selector is disabled when Onroad Brightness is set to Auto (Default) or Auto (Dark), since those modes manage brightness continuously.
 
 ---
 
 ## Interactivity Timeout
 
-| Property | Value |
-|----------|-------|
-| **Param** | `InteractivityTimeout` |
-| **Type** | Option selector |
-| **Range** | 0–120 seconds (step: 10) |
-| **Default** | 0 (disabled) |
+A selector that controls how long the settings interface stays open before automatically closing and returning to the driving screen. Use the **-** and **+** buttons to choose a timeout:
 
-Sets how long the screen remains interactive after the last touch. After this timeout, the screen becomes non-interactive (touch inputs are ignored) until you tap to wake it.
-
-- **0:** Disabled — screen always remains interactive
-- **10–120:** Screen becomes non-interactive after the specified number of seconds
+| Option | Timeout |
+|--------|---------|
+| **Default** | Standard system timeout |
+| **10s - 120s** | Custom timeout in 10-second increments |
+| **1m / 2m** | One or two minute timeout |
 
 ---
 
 ## Related Features
 
-- [Onroad Display](../features/onroad-display.md)
+- [Onroad Display](../features/display/onroad-display.md)

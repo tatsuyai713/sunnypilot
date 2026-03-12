@@ -1,59 +1,35 @@
 ---
-title: Toyota Settings
+title: Toyota / Lexus Settings
 ---
 
 # Toyota / Lexus Vehicle Settings
 
-Settings specific to Toyota and Lexus vehicles. These settings only appear when a Toyota or Lexus vehicle is connected.
+Settings specific to Toyota and Lexus vehicles. These appear in the Vehicle panel when a Toyota or Lexus vehicle is connected or selected.
 
-**Location:** Settings → sunnypilot → Vehicle
+**Location**: `Settings -> Vehicle`
+
+!!! device-support "Supported Devices"
+    :material-check: comma 3X/3 &nbsp; :material-check: sunnylink &nbsp; :material-close: comma four
 
 ---
 
 ## Enforce Factory Longitudinal Control
 
-| Property | Value |
-|----------|-------|
-| **Param** | `ToyotaEnforceStockLongitudinal` |
-| **Type** | Toggle (On/Off) |
-| **Default** | Off |
+When enabled, sunnypilot does not control gas or brakes. The factory Toyota/Lexus adaptive cruise control system handles all speed control. sunnypilot still provides steering assistance.
 
-When enabled, sunnypilot will **not** take over control of gas and brakes. The factory Toyota/Lexus adaptive cruise control system handles all longitudinal (speed) control.
+Enabling this will disable sunnypilot longitudinal control, disable Alpha Longitudinal if it was enabled, and force Stop and Go Hack off. A confirmation dialog appears before activation.
 
-!!! warning "Side Effects"
-    Enabling this will:
-
-    - Disable sunnypilot longitudinal control
-    - Disable Alpha Longitudinal if it was enabled
-    - Force Stop and Go Hack to Off
-    - Trigger an onroad cycle (system restarts driving processes)
-
-!!! info "Requirements"
-    - Cannot be changed while the system is engaged (driving)
-    - A confirmation dialog is shown before enabling
+!!! note "Availability"
+    Cannot be changed while the system is engaged (actively driving).
 
 ---
 
 ## Stop and Go Hack (Alpha)
 
-| Property | Value |
-|----------|-------|
-| **Param** | `ToyotaStopAndGoHack` |
-| **Type** | Toggle (On/Off) |
-| **Default** | Off |
-
-Allows some Toyota/Lexus cars to automatically resume from a stop during stop-and-go traffic. Without this, you must press the resume button or tap the gas to resume after a full stop.
+Allows some Toyota and Lexus vehicles to automatically resume from a full stop during stop-and-go traffic. Without this, you must press the resume button or tap the gas to resume.
 
 !!! warning "Alpha Feature"
-    This is an alpha feature. Use at your own risk. Only applicable to certain models that support sunnypilot longitudinal control.
+    This is an alpha-quality feature. Use at your own risk.
 
-!!! info "Requirements"
-    - sunnypilot Longitudinal Control must be available and enabled
-    - Enforce Factory Longitudinal Control must be **Off**
-    - Cannot be changed while the system is engaged (driving)
-    - A confirmation dialog is shown before enabling
-
-When requirements are not met, the toggle is disabled and a message indicates what's needed:
-
-- If the vehicle is not connected: "Start the vehicle to check vehicle compatibility."
-- If longitudinal control is not available: "sunnypilot Longitudinal Control must be available and enabled for your vehicle to use this feature."
+!!! note "Availability"
+    Requires sunnypilot longitudinal control to be available and enabled. **Enforce Factory Longitudinal Control** must be off. Cannot be changed while engaged.

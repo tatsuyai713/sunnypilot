@@ -50,4 +50,4 @@ Because this operates outside the vehicle manufacturer's intended cruise control
 
 ## Settings Reference
 
-See [Cruise Control Settings](../settings/cruise.md) for configuration details.
+See [Cruise Control Settings](../../settings/cruise/index.md) for configuration details.

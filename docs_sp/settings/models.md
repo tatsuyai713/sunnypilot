@@ -1,78 +1,83 @@
 ---
-title: Models & AI Settings
+title: Models Settings
 ---
 
-# Models & AI Settings
+# Models Settings
 
-Configure driving model behavior and advanced AI parameters.
+Select and manage driving models, and configure model-related parameters.
 
-**Location:** Settings → sunnypilot → Models & AI
+**Location**: `Settings -> Models`
+
+!!! device-support "Supported Devices"
+    :material-check: comma 3X/3 &nbsp; :material-check: sunnylink &nbsp; :material-close: comma four
 
 ---
 
-## Model Selection
+## Current Model
 
-Select which driving model to use. Different models may have different driving characteristics and capabilities.
+A button labeled **SELECT** that opens a model selection dialog. The currently active model name is displayed. Choose from available driving models, each with different driving characteristics and capabilities.
 
 !!! warning "Offroad Only"
-    Model selection can only be changed while the vehicle is offroad (parked with ignition off).
+    Model selection can only be changed while the vehicle is offroad (parked with ignition off), unless Always Offroad mode is active.
 
 ---
 
-## Lane Turn Desire
+## Model Download Progress
 
-| Property | Value |
-|----------|-------|
-| **Param** | `LaneTurnDesire` |
-| **Type** | Toggle (On/Off) |
-| **Default** | Off |
+When a model is being downloaded, progress bars appear for each component:
 
-Enables lane-aware turn desire signals to the driving model. When active, the model receives enhanced lane positioning cues during turns.
+- **Driving Model** -- the main supercombo neural network
+- **Vision Model** -- the vision processing model
+- **Policy Model** -- the decision-making policy model
 
-### Lane Turn Value
-
-| Property | Value |
-|----------|-------|
-| **Param** | `LaneTurnValue` |
-| **Type** | Option selector |
-| **Range** | 500–2000 (displayed with float scaling) |
-| **Default** | 500 |
-
-Adjusts the intensity of the lane turn desire signal sent to the model. Higher values produce a stronger turn desire.
-
-!!! info "Requirements"
-    - Lane Turn Desire must be enabled
-    - Advanced Controls must be enabled (`ShowAdvancedControls`)
+Each shows a progress bar with download percentage.
 
 ---
 
-## LAGD (Live Lateral Delay Compensation)
+## Refresh Model List
 
-| Property | Value |
-|----------|-------|
-| **Param** | `LagdToggle` |
-| **Type** | Toggle (On/Off) |
-| **Default** | Off |
-
-Enables live steering delay compensation. When enabled, sunnypilot continuously measures the actual steering actuator delay via cross-correlation of desired vs. actual lateral acceleration, and uses the measured value to improve steering responsiveness. When disabled, a fixed delay value is used instead (base actuator delay + the LAGD Delay offset below).
-
-### LAGD Delay
-
-| Property | Value |
-|----------|-------|
-| **Param** | `LagdToggleDelay` |
-| **Type** | Option selector |
-| **Range** | 5–50 (displayed with float scaling, in milliseconds) |
-| **Default** | 5 |
-
-Sets an additional fixed steering delay offset (in milliseconds) added to the base steering actuator delay. This value is used **when LAGD is disabled** as the total fixed delay for steering compensation. Useful for fine-tuning steering feel on vehicles where the default actuator delay is slightly off.
-
-!!! info "Requirements"
-    - LAGD must be **disabled** (this setting configures the fixed fallback delay used when LAGD is off)
-    - Advanced Controls must be enabled (`ShowAdvancedControls`)
+A button that forces a refresh of the available model list from the server. Use this if you expect a new model to be available but do not see it in the selection dialog.
 
 ---
 
-## Related Features
+## Clear Model Cache
 
-- [Models & AI](../features/models.md)
+A button that deletes all downloaded models except the currently active one. The current cache size in MB is displayed. Useful for freeing storage space.
+
+---
+
+## Cancel Download
+
+A button that appears only while a model download is in progress. Cancels the current download.
+
+---
+
+## Use Lane Turn Desires
+
+When enabled, at speeds of 20 mph (32 km/h) or below with the turn signal on, the model plans a turn in the blinker direction at the nearest drivable path. This helps the model make smoother turns at low speeds.
+
+---
+
+## Adjust Lane Turn Speed
+
+A selector that sets the maximum speed at which lane turn desires are active. Default is 19 mph. Use the **-** and **+** buttons to adjust.
+
+!!! note "Availability"
+    Only appears when **Use Lane Turn Desires** is enabled and **Show Advanced Controls** is enabled in [Developer Settings](developer.md).
+
+---
+
+## Live Learning Steer Delay
+
+Enables real-time learning and adaptive steering response time. The system continuously measures the actual steering delay and adjusts compensation accordingly. When disabled, a fixed response time is used instead.
+
+The description text shows the current live delay value or a breakdown of delay components.
+
+---
+
+## Adjust Software Delay
+
+A selector that sets the fixed software delay value used when Live Learning Steer Delay is disabled. Default is 0.2 seconds. Use the **-** and **+** buttons to adjust.
+
+!!! note "Availability"
+    Only appears when **Live Learning Steer Delay** is disabled and **Show Advanced Controls** is enabled in [Developer Settings](developer.md).

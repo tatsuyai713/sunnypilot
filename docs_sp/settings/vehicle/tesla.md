@@ -4,31 +4,24 @@ title: Tesla Settings
 
 # Tesla Vehicle Settings
 
-Settings specific to Tesla vehicles. These settings only appear when a Tesla vehicle is connected.
+Settings specific to Tesla vehicles. These appear in the Vehicle panel when a Tesla vehicle is connected or selected.
 
-**Location:** Settings → sunnypilot → Vehicle
+**Location**: `Settings -> Vehicle`
+
+!!! device-support "Supported Devices"
+    :material-check: comma 3X/3 &nbsp; :material-check: sunnylink &nbsp; :material-close: comma four
 
 ---
 
 ## Cooperative Steering (Beta)
 
-| Property | Value |
-|----------|-------|
-| **Param** | `TeslaCoopSteering` |
-| **Type** | Toggle (On/Off) |
-| **Default** | Off |
+Allows the driver to provide limited steering input while sunnypilot is engaged, rather than requiring a full override or disengage to steer manually. Only works above 23 km/h (14 mph).
 
-Allows the driver to provide limited steering input while sunnypilot is engaged. Without this feature, the driver must fully override or disengage to steer manually.
+!!! warning
+    May cause steering oscillations below 48 km/h (30 mph) during turns. Disable this feature if you experience oscillations.
 
-!!! warning "Important"
-    **May experience steering oscillations below 48 km/h (30 mph) during turns.** Recommend disabling this feature if you experience oscillations.
-
-- Only works above **23 km/h** (14 mph)
-- Speed thresholds are displayed in your preferred unit (km/h or mph)
-
-!!! info "Requirements"
-    - Device must be offroad to toggle
-    - Use "Always Offroad" in [Device Settings](../device.md) if you need to change this while the vehicle is running
+!!! note "Availability"
+    Can only be changed while the device is offroad. Use "Always Offroad" in [Device Settings](../device.md) to change this while the vehicle is running.
 
 ---
 
@@ -38,11 +31,11 @@ Tesla vehicles **without a vehicle bus connection** operate in limited MADS mode
 
 | Setting | Forced Value |
 |---------|-------------|
-| Main Cruise Allowed | Off (locked) |
+| Toggle with Main Cruise | Off (locked) |
 | Unified Engagement Mode | On (locked) |
-| Steering Mode on Disengage | Disengage (locked) |
+| Steering Mode on Brake Pedal | Disengage (locked) |
 
-See [MADS Settings](../mads.md) for details on these settings.
+See [MADS Settings](../steering/mads.md) for details.
 
 ---
 
@@ -50,4 +43,4 @@ See [MADS Settings](../mads.md) for details on these settings.
 
 On **release branches**, Speed Limit Assist mode is disabled for Tesla vehicles. Info and Warning modes remain available.
 
-See [Speed Limit Settings](../speed-limit.md) for details.
+See [Speed Limit Settings](../cruise/speed-limit/index.md) for details.

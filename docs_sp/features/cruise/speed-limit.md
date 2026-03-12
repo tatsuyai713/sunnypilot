@@ -87,4 +87,4 @@ Speed Limit Assist provides visual indicators on the driving HUD:
 
 ## Settings Reference
 
-See [Speed Limit Settings](../settings/speed-limit.md) for all configuration options.
+See [Speed Limit Settings](../../settings/cruise/speed-limit/index.md) for all configuration options.

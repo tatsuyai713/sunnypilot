@@ -80,7 +80,7 @@ Some vehicles operate in **limited MADS mode** where certain settings are locked
 
 ## Settings Reference
 
-See [MADS Settings](../settings/mads.md) for all configuration options.
+See [MADS Settings](../../settings/steering/mads.md) for all configuration options.
 
 !!! warning "Safety"
     Always be ready to take full manual control. MADS allows more flexible use of driver assistance, but you remain responsible for safe driving at all times.

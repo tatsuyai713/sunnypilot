@@ -6,20 +6,23 @@ title: Settings
 
 Complete reference for every configurable option in sunnypilot. The panels below are listed in the same order they appear on your device's settings sidebar.
 
+!!! info "Not all settings appear on every device"
+    comma four users see a simplified settings screen. See [Platform Differences](platform-differences.md) for details on what is available on each device. All settings can be accessed through sunnylink regardless of hardware.
+
 | Panel | Description |
 |-------|-------------|
-| [Device](device.md) | Device-level settings (screen, storage, power, calibration) |
+| [Device](device.md) | Device information, calibration, power, and system controls |
 | [Network](network.md) | Wi-Fi connection management |
-| [sunnylink](sunnylink.md) | Cloud backend integration, backup/restore, sponsor status |
-| [Toggles](toggles.md) | Core openpilot toggles (enable, experimental mode, LDW, etc.) |
-| [Software](software.md) | Update channel and branch management |
-| [Models](models.md) | Driving model selection, download, and AI configuration |
-| [Steering](steering.md) | Lateral control mode, MADS, lane change, and torque tuning |
-| [Cruise](cruise.md) | ACC behavior, following distance, cruise button logic, speed limit assist |
-| [Visuals](visuals.md) | HUD overlays and visual customization |
-| [Display](display.md) | Onroad display brightness and layout |
-| [OSM](osm.md) | OpenStreetMap data and map features |
+| [sunnylink](sunnylink.md) | Cloud integration, backup/restore, sponsor status |
+| [Toggles](toggles.md) | Core driving toggles (enable sunnypilot, experimental mode, lane departure, etc.) |
+| [Software](software.md) | Update management and branch selection |
+| [Models](models.md) | Driving model selection, download, and tuning |
+| [Steering](steering/index.md) | Lateral control: MADS, lane change, blinker pause, and torque tuning |
+| [Cruise](cruise/index.md) | Cruise behavior: ICBM, smart cruise, custom increments, speed limit assist |
+| [Visuals](visuals.md) | HUD overlays, indicators, and visual customization |
+| [Display](display.md) | Screen brightness, timeout, and interactivity settings |
+| [OSM](osm.md) | OpenStreetMap database and map downloads |
 | [Trips](trips.md) | Drive statistics and trip history |
-| [Vehicle](vehicle/tesla.md) | Vehicle-specific overrides (Tesla, Toyota, Hyundai, Subaru) |
+| [Vehicle](vehicle/index.md) | Vehicle-specific settings by brand |
 | [Firehose](firehose.md) | Training data upload for comma's driving models |
 | [Developer](developer.md) | Developer and debug options |

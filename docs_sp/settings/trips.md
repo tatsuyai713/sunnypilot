@@ -4,24 +4,32 @@ title: Trips Settings
 
 # Trips Settings
 
-View your driving statistics and trip history.
+View your cumulative and recent driving statistics.
 
-**Location:** Settings > sunnypilot > Trips
+**Location**: `Settings -> Trips`
+
+!!! device-support "Supported Devices"
+    :material-check: comma 3X/3 &nbsp; :material-check: sunnylink &nbsp; :material-close: comma four
 
 ---
 
-## Drive Statistics
+## All Time
 
-The Trips panel displays cumulative and recent driving statistics:
+A stat card showing your lifetime driving totals:
 
-| Statistic | Description |
-|-----------|-------------|
-| **All-Time Routes** | Total number of driving routes recorded |
-| **All-Time Distance** | Total distance driven (km or miles, based on unit preference) |
-| **All-Time Hours** | Total hours of driving time |
-| **Past Week Routes** | Number of routes in the last 7 days |
-| **Past Week Distance** | Distance driven in the last 7 days |
-| **Past Week Hours** | Hours driven in the last 7 days |
+- **Drives** -- total number of driving routes recorded
+- **Distance** -- total distance driven (km or miles, based on your unit preference)
+- **Hours** -- total hours of driving time
+
+---
+
+## Past Week
+
+A stat card showing your driving activity from the last 7 days:
+
+- **Drives** -- number of routes recorded this week
+- **Distance** -- distance driven this week
+- **Hours** -- hours driven this week
 
 !!! note
-    Statistics are computed from locally stored driving logs. Clearing device storage will reset these values.
+    This panel is display-only. There are no interactive controls.

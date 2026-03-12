@@ -20,7 +20,7 @@ Torque-based lateral control applies steering commands as torque (rotational for
 
 !!! info "Requirements"
     - Vehicle must not use angle-based steering
-    - **Enforce Torque Control** must be enabled in [Steering Settings](../settings/steering.md)
+    - **Enforce Torque Control** must be enabled in [Steering Settings](../../settings/steering/index.md)
     - Mutually exclusive with [NNLC](nnlc.md) — only one can be active at a time
     - Device must be offroad to change settings
 
@@ -45,4 +45,4 @@ Torque-based lateral control applies steering commands as torque (rotational for
 
 ## Settings Reference
 
-See [Torque Settings](../settings/torque.md) for all tuning parameters.
+See [Torque Settings](../../settings/steering/torque.md) for all tuning parameters.

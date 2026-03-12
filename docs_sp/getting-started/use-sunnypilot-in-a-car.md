@@ -39,4 +39,4 @@ sunnypilot offers many configurable options. Access settings through the on-devi
 - **Steering** — Lane keeping, MADS, and steering tuning
 - **Display & Visuals** — Customize the on-screen display
 
-See the [Settings Reference](../settings/cruise.md) for a complete guide to all options.
+See the [Settings Reference](../settings/cruise/index.md) for a complete guide to all options.

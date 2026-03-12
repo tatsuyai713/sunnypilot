@@ -25,4 +25,4 @@ The camera continuously monitors the road ahead. When a lead vehicle is detected
 
 ## Settings Reference
 
-See [Cruise Control Settings](../settings/cruise.md) for configuration details.
+See [Cruise Control Settings](../../settings/cruise/index.md) for configuration details.

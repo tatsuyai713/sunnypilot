@@ -27,4 +27,4 @@ SCC-M uses downloaded OpenStreetMap data to anticipate road changes — curves, 
 
 ## Settings Reference
 
-See [Cruise Control Settings](../settings/cruise.md) for configuration details.
+See [Cruise Control Settings](../../settings/cruise/index.md) for configuration details.
