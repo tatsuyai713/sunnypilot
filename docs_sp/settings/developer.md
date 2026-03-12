@@ -59,6 +59,20 @@ Enables the Copyparty file sharing server on the device, allowing easy file tran
 
 ---
 
+## Error Log
+
+| Property | Value |
+|----------|-------|
+| **Param** | N/A (action button) |
+| **Type** | Button |
+
+Opens the error log viewer, showing recent system errors and warnings. Useful for diagnosing issues with sunnypilot features or vehicle communication.
+
+!!! info "Requirements"
+    - Advanced Controls must be enabled
+
+---
+
 ## Quick Boot
 
 | Property | Value |

@@ -36,11 +36,10 @@ Allows sunnypilot to dynamically manage cruise speed by intercepting button pres
 | **Type** | Toggle (On/Off) |
 | **Default** | Off |
 
-Uses vision-based data to make smarter cruise control decisions, such as adjusting speed based on detected lead vehicles.
+Uses vision-based data to automatically reduce cruise speed when approaching curves. Monitors predicted lateral acceleration and smoothly decelerates when entering turns, then accelerates back to set speed when exiting.
 
 !!! info "Requirements"
-    - ICBM must be enabled
-    - Vehicle must support ICBM
+    - Longitudinal control must be available, **or** ICBM must be enabled
 
 ---
 
@@ -52,11 +51,10 @@ Uses vision-based data to make smarter cruise control decisions, such as adjusti
 | **Type** | Toggle (On/Off) |
 | **Default** | Off |
 
-Uses map data (curves, speed limits) to adjust cruise speed proactively.
+Uses map data to proactively adjust cruise speed before speed-restricted areas and mapped turns. Calculates deceleration distance based on current speed and upcoming waypoint target velocities.
 
 !!! info "Requirements"
-    - ICBM must be enabled
-    - Vehicle must support ICBM
+    - Longitudinal control must be available, **or** ICBM must be enabled
 
 ---
 

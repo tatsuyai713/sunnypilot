@@ -46,7 +46,7 @@ Adjusts the intensity of the lane turn desire signal sent to the model. Higher v
 
 ---
 
-## LAGD (Look-Ahead Generative Driving)
+## LAGD (Live Lateral Delay Compensation)
 
 | Property | Value |
 |----------|-------|
@@ -54,7 +54,7 @@ Adjusts the intensity of the lane turn desire signal sent to the model. Higher v
 | **Type** | Toggle (On/Off) |
 | **Default** | Off |
 
-Enables the Look-Ahead Generative Driving feature, which uses generative AI to anticipate road conditions ahead.
+Enables live steering delay compensation. When enabled, sunnypilot continuously measures the actual steering actuator delay via cross-correlation of desired vs. actual lateral acceleration, and uses the measured value to improve steering responsiveness. When disabled, a fixed delay value is used instead (base actuator delay + the LAGD Delay offset below).
 
 ### LAGD Delay
 
@@ -62,13 +62,13 @@ Enables the Look-Ahead Generative Driving feature, which uses generative AI to a
 |----------|-------|
 | **Param** | `LagdToggleDelay` |
 | **Type** | Option selector |
-| **Range** | 5–50 (displayed with float scaling) |
+| **Range** | 5–50 (displayed with float scaling, in milliseconds) |
 | **Default** | 5 |
 
-Configures the look-ahead delay for LAGD. Higher values make the system look further ahead.
+Sets an additional fixed steering delay offset (in milliseconds) added to the base steering actuator delay. This value is used **when LAGD is disabled** as the total fixed delay for steering compensation. Useful for fine-tuning steering feel on vehicles where the default actuator delay is slightly off.
 
 !!! info "Requirements"
-    - LAGD must be **disabled** (this setting is shown when LAGD is off to configure its parameters before enabling)
+    - LAGD must be **disabled** (this setting configures the fixed fallback delay used when LAGD is off)
     - Advanced Controls must be enabled (`ShowAdvancedControls`)
 
 ---

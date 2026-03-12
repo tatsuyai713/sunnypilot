@@ -26,7 +26,7 @@ These are on/off toggles for individual HUD elements.
 | **True Vehicle Speed** | `TrueVEgoUI` | Shows the true vehicle speed from the CAN bus (may differ from GPS speed) |
 | **Hide Speed** | `HideVEgoUI` | Hides the speed display from the HUD entirely |
 | **Turn Signals** | `ShowTurnSignals` | Shows the turn signal status on the HUD |
-| **Rocket Fuel** | `RocketFuel` | Enables the Rocket Fuel visual theme for the driving path |
+| **Rocket Fuel** | `RocketFuel` | Displays a real-time acceleration bar on the left side of the driving screen. Green indicates acceleration, red indicates deceleration. |
 
 ---
 

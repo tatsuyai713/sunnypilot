@@ -12,7 +12,7 @@ Adaptive cruise control enhancements including intelligent button management, vi
 
 ## Steering
 
-Lateral control features including the Modular Assistive Driving System (MADS), neural network lateral control (NNLC), automatic lane changes, and torque-based steering control.
+Lateral control features including the Modular Assistive Driving System (MADS), neural network lateral control (NNLC), automatic lane changes, torque-based steering control, and blinker pause lateral for temporarily pausing steering during turn signal activation.
 
 ## Display & Visuals
 
@@ -22,6 +22,6 @@ Onroad display customizations and HUD visual enhancements for real-time driving 
 
 Driving model selection and AI-related configuration options.
 
-## OSM Maps
+## Connected Services
 
-OpenStreetMap integration for speed limit data and map-based features.
+Cloud and map integrations including sunnylink (settings backup/restore, sponsor tiers, GitHub account pairing, remote device management) and OpenStreetMap (speed limit data and map-based features).

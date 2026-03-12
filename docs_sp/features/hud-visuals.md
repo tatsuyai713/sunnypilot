@@ -20,6 +20,8 @@ Customize the heads-up display (HUD) elements and visual overlays shown on the d
 | **Lead Depart Alert** | Alerts when the car ahead starts moving |
 | **True Vehicle Speed** | CAN bus speed (may differ from GPS) |
 | **Turn Signals** | Shows turn signal status on the HUD |
+| **Rocket Fuel** | Real-time acceleration/deceleration bar on the left side of the screen |
+| **Rainbow Mode** | Animated rainbow-gradient overlay on the model driving path |
 | **Chevron Info** | Distance, speed, or time gap to lead vehicle |
 | **Developer UI** | Debug information for diagnostics |
 

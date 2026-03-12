@@ -40,29 +40,47 @@ nav = [
       { "Neural Network Lateral Control" = "features/nnlc.md" },
       { "Auto Lane Change" = "features/auto-lane-change.md" },
       { "Torque Control" = "features/torque-control.md" },
+      { "Blinker Pause Lateral" = "features/blinker-pause.md" },
     ]},
     { "Display & Visuals" = [
       { "Onroad Display" = "features/onroad-display.md" },
       { "HUD & Visuals" = "features/hud-visuals.md" },
     ]},
     { "Models & AI" = "features/models.md" },
-    { "OSM Maps" = "features/osm-maps.md" },
+    { "Connected Services" = [
+      { "sunnylink" = "features/sunnylink.md" },
+      { "OSM Maps" = "features/osm-maps.md" },
+    ]},
   ]},
   { "Settings" = [
     "settings/index.md",
-    { "Cruise Control" = "settings/cruise.md" },
-    { "Speed Limit" = "settings/speed-limit.md" },
-    { "Steering" = "settings/steering.md" },
-    { "MADS" = "settings/mads.md" },
-    { "Lane Change" = "settings/lane-change.md" },
-    { "Torque" = "settings/torque.md" },
-    { "Display" = "settings/display.md" },
-    { "Visuals & HUD" = "settings/visuals.md" },
-    { "Device" = "settings/device.md" },
-    { "Models & AI" = "settings/models.md" },
-    { "OSM Maps" = "settings/osm.md" },
-    { "Software" = "settings/software.md" },
-    { "Developer" = "settings/developer.md" },
+    { "Cruise Control" = [
+      { "Cruise Control" = "settings/cruise.md" },
+      { "Speed Limit" = "settings/speed-limit.md" },
+    ]},
+    { "Steering" = [
+      { "Steering" = "settings/steering.md" },
+      { "MADS" = "settings/mads.md" },
+      { "Lane Change" = "settings/lane-change.md" },
+      { "Torque" = "settings/torque.md" },
+    ]},
+    { "Display & Visuals" = [
+      { "Display" = "settings/display.md" },
+      { "Visuals & HUD" = "settings/visuals.md" },
+    ]},
+    { "Models & AI" = [
+      { "Models & AI" = "settings/models.md" },
+    ]},
+    { "Device & System" = [
+      { "Device" = "settings/device.md" },
+      { "Software" = "settings/software.md" },
+      { "Developer" = "settings/developer.md" },
+    ]},
+    { "Connected Services" = [
+      { "sunnylink" = "settings/sunnylink.md" },
+      { "Trips" = "settings/trips.md" },
+      { "OSM Maps" = "settings/osm.md" },
+    ]},
     { "Vehicle-Specific" = [
       { "Tesla" = "settings/vehicle/tesla.md" },
       { "Toyota" = "settings/vehicle/toyota.md" },
@@ -106,7 +124,7 @@ features = [
   "navigation.tabs",
   "navigation.tabs.sticky",
   "navigation.sections",
-  "navigation.prune",
+  "navigation.expand",
   "navigation.indexes",
   "navigation.path",
   "navigation.instant",
@@ -143,7 +161,21 @@ accent = "teal"
 toggle.icon = "material/brightness-4"
 toggle.name = "Switch to system preference"
 
-# Markdown extensions (only non-defaults; admonition, attr_list, etc. are built-in)
+# Markdown extensions
+# When specifying any extensions, defaults are overridden, so we must list all needed extensions.
+[project.markdown_extensions.admonition]
+
+[project.markdown_extensions.attr_list]
+
+[project.markdown_extensions.def_list]
+
+[project.markdown_extensions.footnotes]
+
+[project.markdown_extensions.md_in_html]
+
+[project.markdown_extensions.toc]
+permalink = true
+
 [project.markdown_extensions.pymdownx.details]
 
 [project.markdown_extensions.pymdownx.emoji]

@@ -12,14 +12,14 @@ Select and configure the driving model used by sunnypilot. Different models offe
 
 - **Model Selection** — Choose from available driving models (offroad only)
 - **Lane Turn Desire** — Enhance lane positioning during turns
-- **LAGD (Look-Ahead Generative Driving)** — Anticipate road conditions ahead using generative AI
+- **LAGD (Live Lateral Delay Compensation)** — Dynamically measures and compensates for steering actuator delay using real-time signal correlation
 
 ## Advanced Parameters
 
 Advanced parameters are only visible when **Show Advanced Controls** is enabled in [Developer Settings](../settings/developer.md):
 
 - **Lane Turn Value** — Intensity of lane turn desire (500–2000)
-- **LAGD Delay** — Look-ahead distance configuration (5–50)
+- **LAGD Delay** — Fixed steering delay offset in milliseconds when LAGD is disabled (5–50)
 
 ## How to Configure
 

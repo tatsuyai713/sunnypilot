@@ -92,3 +92,46 @@ Forces the device into offroad mode, even if the vehicle is running. This is use
 
 !!! tip
     Some vehicle-specific settings (e.g., Tesla Cooperative Steering, Subaru Stop and Go) require the device to be offroad. Use this button to access those settings without turning off the vehicle.
+
+---
+
+## Reset Settings
+
+| Property | Value |
+|----------|-------|
+| **Type** | Button (double confirmation) |
+
+Resets all sunnypilot-specific settings to their default values. Requires a second confirmation tap to execute. Does not affect upstream openpilot settings or calibration data.
+
+!!! warning
+    This action cannot be undone. Consider creating a sunnylink backup before resetting.
+
+---
+
+## Driver Camera Preview
+
+| Property | Value |
+|----------|-------|
+| **Type** | Button |
+
+Opens a live preview of the driver-facing camera. Useful for verifying camera alignment and driver monitoring positioning.
+
+---
+
+## Reboot / Power Off
+
+| Property | Value |
+|----------|-------|
+| **Type** | Buttons |
+
+Standard device power management buttons for rebooting or shutting down the device.
+
+---
+
+## Regulatory / Training Guide
+
+| Property | Value |
+|----------|-------|
+| **Type** | Buttons |
+
+Access regulatory information and the interactive training guide that walks through sunnypilot's driving assist features and safety requirements.
