@@ -31,6 +31,7 @@ jobs:
           DISCOURSE_URL: ${{ secrets.DISCOURSE_URL }}
           DISCOURSE_API_KEY: ${{ secrets.DISCOURSE_API_KEY }}
           DISCOURSE_API_USER: ${{ secrets.DISCOURSE_API_USER }}
+          DISCOURSE_CATEGORY_MAP: '{"getting-started": 115}'
         run: |
           uv run --python 3.12 python -c "
           import sys
@@ -66,11 +67,8 @@ jobs:
 
           config = DiscourseConfig.from_env()
           client = DiscourseClient(config)
-
-          cat_id = client.get_category_id()
-          if cat_id is None:
-            print(f'ERROR: Category not found on {config.base_url}')
-            sys.exit(1)
+          category_id = category_id_for(DOC_PATH)
+          print(f'Category ID: {category_id}')
 
           existing = client.find_topic_by_sync_id(DOC_PATH)
           if existing is not None:
@@ -85,7 +83,7 @@ jobs:
               sys.exit(1)
             print(f'Updated: {config.base_url}/t/{topic_id}')
           else:
-            result = client.create_topic(title=title, raw=body, category_id=cat_id, tags=['docs-auto-sync'])
+            result = client.create_topic(title=title, raw=body, category_id=category_id, tags=['docs-auto-sync'])
             if result is None:
               print('ERROR: Failed to create topic')
               sys.exit(1)

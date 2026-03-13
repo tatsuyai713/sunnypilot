@@ -20,7 +20,7 @@ TEST_CONFIG = DiscourseConfig(
     base_url="https://community.sunnypilot.ai",
     api_key="test-api-key-123",
     api_user="docs-bot",
-    category_slug="documentation",
+    category_mapping={"getting-started": 115, "features": 116},
 )
 
 
@@ -61,7 +61,7 @@ def test_config_from_env():
         "DISCOURSE_URL": "https://forum.example.com/",
         "DISCOURSE_API_KEY": "secret-key",
         "DISCOURSE_API_USER": "bot",
-        "DISCOURSE_CATEGORY": "docs",
+        "DISCOURSE_CATEGORY_MAP": '{"getting-started": 115, "features": 116}',
     }
     with patch.dict("os.environ", env, clear=False):
         config = DiscourseConfig.from_env()
@@ -69,7 +69,7 @@ def test_config_from_env():
     assert config.base_url == "https://forum.example.com"  # trailing slash stripped
     assert config.api_key == "secret-key"
     assert config.api_user == "bot"
-    assert config.category_slug == "docs"
+    assert config.category_mapping == {"getting-started": 115, "features": 116}
     print("  PASS: config_from_env")
 
 
@@ -78,14 +78,53 @@ def test_config_from_env_defaults():
         "DISCOURSE_URL": "https://forum.example.com",
         "DISCOURSE_API_KEY": "key",
     }
-    with patch.dict("os.environ", env, clear=False):
-        # Remove optional vars if present
-        with patch.dict("os.environ", {"DISCOURSE_API_USER": "", "DISCOURSE_CATEGORY": ""}, clear=False):
-            pass
+    with patch.dict("os.environ", env, clear=True):
         config = DiscourseConfig.from_env()
 
-    assert config.api_user in ("system", os.environ.get("DISCOURSE_API_USER", "system"))
+    assert config.api_user == "system"
+    assert config.category_mapping == {}
     print("  PASS: config_from_env_defaults")
+
+
+def test_config_invalid_category_map_json():
+    env = {
+        "DISCOURSE_URL": "https://forum.example.com",
+        "DISCOURSE_API_KEY": "key",
+        "DISCOURSE_CATEGORY_MAP": "not-valid-json",
+    }
+    with patch.dict("os.environ", env, clear=True):
+        try:
+            DiscourseConfig.from_env()
+            assert False, "Should have raised ValueError"
+        except ValueError as e:
+            assert "DISCOURSE_CATEGORY_MAP" in str(e)
+    print("  PASS: config_invalid_category_map_json")
+
+
+def test_config_invalid_category_map_type():
+    env = {
+        "DISCOURSE_URL": "https://forum.example.com",
+        "DISCOURSE_API_KEY": "key",
+        "DISCOURSE_CATEGORY_MAP": "[1, 2, 3]",
+    }
+    with patch.dict("os.environ", env, clear=True):
+        try:
+            DiscourseConfig.from_env()
+            assert False, "Should have raised ValueError"
+        except ValueError as e:
+            assert "DISCOURSE_CATEGORY_MAP" in str(e)
+    print("  PASS: config_invalid_category_map_type")
+
+
+def test_category_id_for_mapped():
+    assert TEST_CONFIG.category_id_for("getting-started/what-is-sunnypilot.md") == 115
+    assert TEST_CONFIG.category_id_for("features/icbm.md") == 116
+    print("  PASS: category_id_for_mapped")
+
+
+def test_category_id_for_unmapped():
+    assert TEST_CONFIG.category_id_for("unknown-section/doc.md") == 114
+    print("  PASS: category_id_for_unmapped")
 
 
 def test_config_missing_url():
@@ -117,48 +156,6 @@ def test_config_immutable():
     except AttributeError:
         pass
     print("  PASS: config_immutable")
-
-
-# ---------------------------------------------------------------------------
-# get_category_id
-# ---------------------------------------------------------------------------
-
-
-@patch("urllib.request.urlopen")
-def test_get_category_id_found(mock_urlopen: MagicMock):
-    mock_urlopen.return_value = mock_response({"category": {"id": 42, "slug": "documentation"}})
-    client = DiscourseClient(TEST_CONFIG)
-
-    result = client.get_category_id("documentation")
-
-    assert result == 42
-    call_args = mock_urlopen.call_args[0][0]
-    assert "/c/documentation/show.json" in call_args.full_url
-    assert call_args.get_header("Api-key") == "test-api-key-123"
-    assert call_args.get_header("Api-username") == "docs-bot"
-    print("  PASS: get_category_id_found")
-
-
-@patch("urllib.request.urlopen")
-def test_get_category_id_not_found(mock_urlopen: MagicMock):
-    mock_urlopen.side_effect = mock_http_error(404, "Not Found")
-    client = DiscourseClient(TEST_CONFIG)
-
-    result = client.get_category_id("nonexistent")
-    assert result is None
-    print("  PASS: get_category_id_not_found")
-
-
-@patch("urllib.request.urlopen")
-def test_get_category_id_uses_default_slug(mock_urlopen: MagicMock):
-    mock_urlopen.return_value = mock_response({"category": {"id": 7}})
-    client = DiscourseClient(TEST_CONFIG)
-
-    client.get_category_id()  # no arg — uses config.category_slug
-
-    call_args = mock_urlopen.call_args[0][0]
-    assert "/c/documentation/show.json" in call_args.full_url
-    print("  PASS: get_category_id_uses_default_slug")
 
 
 # ---------------------------------------------------------------------------
@@ -355,15 +352,16 @@ def test_first_post_id_topic_not_found(mock_urlopen: MagicMock):
 
 @patch("urllib.request.urlopen")
 def test_headers_set_correctly(mock_urlopen: MagicMock):
-    mock_urlopen.return_value = mock_response({"category": {"id": 1}})
+    mock_urlopen.return_value = mock_response({"topics": []})
     client = DiscourseClient(TEST_CONFIG)
 
-    client.get_category_id()
+    client.find_topic_by_sync_id("test.md")
 
     req = mock_urlopen.call_args[0][0]
     assert req.get_header("Api-key") == "test-api-key-123"
     assert req.get_header("Api-username") == "docs-bot"
     assert req.get_header("Content-type") == "application/json"
+    assert "Mozilla" in req.get_header("User-agent")
     print("  PASS: headers_set_correctly")
 
 
@@ -377,7 +375,7 @@ def test_connection_error_returns_none(mock_urlopen: MagicMock):
     mock_urlopen.side_effect = urllib.error.URLError("Connection refused")
     client = DiscourseClient(TEST_CONFIG)
 
-    result = client.get_category_id()
+    result = client.find_topic_by_sync_id("test.md")
     assert result is None
     print("  PASS: connection_error_returns_none")
 
@@ -394,13 +392,13 @@ if __name__ == "__main__":
         # Config
         test_config_from_env,
         test_config_from_env_defaults,
+        test_config_invalid_category_map_json,
+        test_config_invalid_category_map_type,
         test_config_missing_url,
         test_config_missing_api_key,
         test_config_immutable,
-        # get_category_id
-        test_get_category_id_found,
-        test_get_category_id_not_found,
-        test_get_category_id_uses_default_slug,
+        test_category_id_for_mapped,
+        test_category_id_for_unmapped,
         # find_topic_by_sync_id
         test_find_topic_found,
         test_find_topic_not_found,

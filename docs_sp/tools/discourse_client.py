@@ -1,17 +1,18 @@
 """Minimal Discourse API client using only urllib (zero external deps).
 
-Provides the 5 CRUD operations needed by the docs sync orchestrator:
-1. get_category_id(slug)
-2. find_topic_by_sync_id(sync_id)
-3. create_topic(title, raw, category_id, tags)
-4. update_post(post_id, raw, edit_reason)
-5. first_post_id(topic_id)
+Provides the 4 CRUD operations needed by the docs sync orchestrator:
+1. find_topic_by_sync_id(sync_id)
+2. create_topic(title, raw, category_id, tags)
+3. update_post(post_id, raw, edit_reason)
+4. first_post_id(topic_id)
 
 Configuration via environment variables:
-  DISCOURSE_URL      - Base URL (e.g. https://community.sunnypilot.ai)
-  DISCOURSE_API_KEY  - API key with topic create/update permissions
-  DISCOURSE_API_USER - Username for API requests (default: "system")
-  DISCOURSE_CATEGORY - Category slug for documentation (default: "documentation")
+  DISCOURSE_URL          - Base URL (e.g. https://community.sunnypilot.ai)
+  DISCOURSE_API_KEY      - API key with topic create/update permissions
+  DISCOURSE_API_USER     - Username for API requests (default: "system")
+  DISCOURSE_CATEGORY_MAP - JSON mapping of doc section to Discourse category ID
+                           e.g. '{"getting-started": 115, "features": 116}'
+                           Falls back to parent category 114 for unmapped sections.
 """
 
 from __future__ import annotations
@@ -21,8 +22,13 @@ import os
 import urllib.error
 import urllib.parse
 import urllib.request
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
+
+
+DEFAULT_PARENT_CATEGORY_ID = 114
+
+DEFAULT_CATEGORY_MAP: dict[str, int] = {}
 
 
 @dataclass(frozen=True)
@@ -32,14 +38,24 @@ class DiscourseConfig:
     base_url: str
     api_key: str
     api_user: str = "system"
-    category_slug: str = "documentation"
+    category_mapping: dict[str, int] = field(default_factory=lambda: dict(DEFAULT_CATEGORY_MAP))
+
+    def category_id_for(self, doc_path: str) -> int:
+        """Return the Discourse category ID for a given doc path.
+
+        Looks up the top-level folder (e.g. "getting-started" from
+        "getting-started/what-is-sunnypilot.md") in category_mapping.
+        Falls back to the parent Documentation category (114).
+        """
+        section = doc_path.split("/")[0] if "/" in doc_path else doc_path
+        return self.category_mapping.get(section, DEFAULT_PARENT_CATEGORY_ID)
 
     @classmethod
     def from_env(cls) -> DiscourseConfig:
         """Build config from environment variables.
 
         Raises:
-            ValueError: If required env vars are missing.
+            ValueError: If required env vars are missing or map is invalid JSON.
         """
         base_url = os.environ.get("DISCOURSE_URL", "")
         api_key = os.environ.get("DISCOURSE_API_KEY", "")
@@ -49,11 +65,23 @@ class DiscourseConfig:
         if not api_key:
             raise ValueError("DISCOURSE_API_KEY environment variable is required")
 
+        category_map_str = os.environ.get("DISCOURSE_CATEGORY_MAP", "")
+        if category_map_str:
+            try:
+                raw_map = json.loads(category_map_str)
+            except json.JSONDecodeError as e:
+                raise ValueError(f"DISCOURSE_CATEGORY_MAP must be valid JSON: {e}")
+            if not isinstance(raw_map, dict):
+                raise ValueError("DISCOURSE_CATEGORY_MAP must be a JSON object")
+            category_mapping = {str(k): int(v) for k, v in raw_map.items()}
+        else:
+            category_mapping = dict(DEFAULT_CATEGORY_MAP)
+
         return cls(
             base_url=base_url.rstrip("/"),
             api_key=api_key,
             api_user=os.environ.get("DISCOURSE_API_USER", "system"),
-            category_slug=os.environ.get("DISCOURSE_CATEGORY", "documentation"),
+            category_mapping=category_mapping,
         )
 
 
@@ -68,21 +96,6 @@ class DiscourseClient:
         return self._config
 
     # ----- Public API -----
-
-    def get_category_id(self, slug: str | None = None) -> int | None:
-        """Look up a category ID by slug.
-
-        Args:
-            slug: Category slug. Defaults to config.category_slug.
-
-        Returns:
-            Category ID, or None if not found.
-        """
-        slug = slug or self._config.category_slug
-        data = self._get(f"/c/{slug}/show.json")
-        if data is None:
-            return None
-        return data.get("category", {}).get("id")
 
     def find_topic_by_sync_id(self, sync_id: str) -> dict[str, Any] | None:
         """Find an existing topic by its embedded sync ID comment.
@@ -178,6 +191,7 @@ class DiscourseClient:
             "Content-Type": "application/json",
             "Api-Key": self._config.api_key,
             "Api-Username": self._config.api_user,
+            "User-Agent": "Mozilla/5.0 (compatible; sunnypilot-docs-sync/1.0)",
         }
 
     def _get(self, path: str) -> dict[str, Any] | None:
