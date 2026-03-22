@@ -62,8 +62,8 @@ class DesireHelper:
     self.lane_turn_controller.update_params()
     v_ego = carstate.vEgo
     one_blinker = carstate.leftBlinker != carstate.rightBlinker
-    one_button_blinker = (carstate.leftButtonBlinker != carstate.rightButtonBlinker) or (carstate.leftButtonBlinkerNudge != carstate.rightButtonBlinkerNudge) and
-                         carstate.enableButtonBlinker
+    one_button_blinker = ((carstate.leftButtonBlinker != carstate.rightButtonBlinker) or (carstate.leftButtonBlinkerNudge != carstate.rightButtonBlinkerNudge) and
+                         carstate.enableButtonBlinker)
     below_lane_change_speed = v_ego < LANE_CHANGE_SPEED_MIN
 
     ltl = (carstate.leftButtonBlinker or carstate.leftButtonBlinkerNudge) and carstate.enableButtonBlinker
