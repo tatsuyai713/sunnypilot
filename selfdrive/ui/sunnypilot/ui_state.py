@@ -11,6 +11,8 @@ from openpilot.common.params import Params
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.display import OnroadBrightness
 from openpilot.sunnypilot.sunnylink.sunnylink_state import SunnylinkState
 from openpilot.system.ui.lib.application import gui_app
+from openpilot.system.ui.lib.multilang import tr
+from openpilot.system.ui.widgets import DialogResult
 
 OpenpilotState = log.SelfdriveState.OpenpilotState
 MADSState = custom.ModularAssistiveDrivingSystem.ModularAssistiveDrivingSystemState
@@ -42,6 +44,8 @@ class UIStateSP:
     self.CP_SP: custom.CarParamsSP | None = None
     self.has_icbm: bool = False
     self.is_sp_release: bool = self.params.get_bool("IsReleaseSpBranch")
+    self._remote_cycle_pending: bool = False
+    self._remote_cycle_dialog_shown: bool = False
 
   def update(self) -> None:
     if self.sunnylink_enabled:
@@ -146,6 +150,50 @@ class UIStateSP:
     self.true_v_ego_ui = self.params.get_bool("TrueVEgoUI")
     self.turn_signals = self.params.get_bool("ShowTurnSignals")
     self.boot_offroad_mode = self.params.get("DeviceBootMode", return_default=True)
+    self._remote_cycle_pending = self.params.get_bool("OnroadCyclePendingRemote")
+
+  def check_remote_cycle_pending(self, ui_state_ref) -> None:
+    """Check and handle pending remote onroad cycle when not engaged."""
+    if not self._remote_cycle_pending or self._remote_cycle_dialog_shown:
+      return
+
+    if ui_state_ref.engaged:
+      return  # Event system handles the onroad banner
+
+    # Auto-apply mode: cycle immediately without prompting
+    if self.params.get_bool("AutoApplyRemoteOnroadCycle"):
+      self.params.put_bool("OnroadCycleRequested", True)
+      self.params.put_bool("OnroadCyclePendingRemote", False)
+      self._remote_cycle_pending = False
+      return
+
+    # Prompt mode: show confirmation dialog
+    self._remote_cycle_dialog_shown = True
+
+    def _on_result(result):
+      self._remote_cycle_dialog_shown = False
+      if result == DialogResult.CONFIRM:
+        self.params.put_bool("OnroadCycleRequested", True)
+      self.params.put_bool("OnroadCyclePendingRemote", False)
+      self._remote_cycle_pending = False
+
+    if gui_app.big_ui():
+      from openpilot.selfdrive.ui.mici.widgets.dialog import BigConfirmationDialog
+      dlg = BigConfirmationDialog(
+        title="slide to apply\nremote settings",
+        icon=gui_app.texture("icons_mici/settings/device/update.png", 64, 64),
+        confirm_callback=lambda: _on_result(DialogResult.CONFIRM),
+      )
+    else:
+      from openpilot.system.ui.widgets.confirm_dialog import ConfirmDialog
+      dlg = ConfirmDialog(
+        text=tr("A setting was changed via sunnylink.") + "\n" +
+             tr("The system will briefly restart to apply it."),
+        confirm_text=tr("Apply Now"),
+        cancel_text=tr("Later"),
+        callback=_on_result,
+      )
+    gui_app.push_widget(dlg)
 
 
 class DeviceSP:

@@ -164,6 +164,8 @@ class UIState(UIStateSP):
     if self.engaged != self._engaged_prev:
       for callback in self._engaged_transition_callbacks:
         callback()
+      if not self.engaged:
+        self.check_remote_cycle_pending(self)
       self._engaged_prev = self.engaged
 
     # Handle onroad/offroad transition
@@ -172,6 +174,8 @@ class UIState(UIStateSP):
         self.status = UIStatus.DISENGAGED
         self.started_frame = self.sm.frame
         self.started_time = time.monotonic()
+      else:
+        self.check_remote_cycle_pending(self)
 
       for callback in self._offroad_transition_callbacks:
         callback()

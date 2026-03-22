@@ -35,6 +35,10 @@
     "title": "Athenad Pid",
     "description": ""
   },
+  "AutoApplyRemoteOnroadCycle": {
+    "title": "Auto Apply Remote Onroad Cycle",
+    "description": "When enabled, remote settings changes requiring a restart will apply automatically without prompting."
+  },
   "AthenadRecentlyViewedRoutes": {
     "title": "Athenad Recently Viewed Routes",
     "description": ""
@@ -884,6 +888,10 @@
     "title": "Offroad Update Failed",
     "description": ""
   },
+  "OnroadCyclePendingRemote": {
+    "title": "Onroad Cycle Pending Remote",
+    "description": ""
+  },
   "OnroadCycleRequested": {
     "title": "Onroad Cycle Requested",
     "description": ""
@@ -1123,6 +1131,10 @@
   "PandaSomResetTriggered": {
     "title": "Panda Som Reset Triggered",
     "description": ""
+  },
+  "ParamsVersion": {
+    "title": "Params Version",
+    "description": "Monotonically increasing counter incremented on each remote saveParams call, used for frontend change detection"
   },
   "PlanplusControl": {
     "title": "Plan Plus Controls",

@@ -201,8 +201,11 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"NeuralNetworkLateralControl", {PERSISTENT | BACKUP, BOOL, "0"}},
 
     // sunnylink params
+    {"AutoApplyRemoteOnroadCycle", {PERSISTENT | BACKUP, BOOL}},
     {"EnableSunnylinkUploader", {PERSISTENT | BACKUP, BOOL}},
     {"LastSunnylinkPingTime", {CLEAR_ON_MANAGER_START, INT}},
+    {"OnroadCyclePendingRemote", {CLEAR_ON_MANAGER_START, BOOL}},
+    {"ParamsVersion", {PERSISTENT, INT}},
     {"SettingsCapabilities", {PERSISTENT, STRING}},
     {"SettingsSchema", {PERSISTENT, STRING}},
     {"SunnylinkCache_Roles", {PERSISTENT, STRING}},

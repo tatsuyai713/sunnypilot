@@ -690,6 +690,7 @@
             {
               "key": "OpenpilotEnabledToggle",
               "widget": "toggle",
+              "needs_onroad_cycle": true,
               "enablement": [
                 {
                   "type": "offroad_only"
@@ -771,11 +772,13 @@
           "items": [
             {
               "key": "RecordFront",
-              "widget": "toggle"
+              "widget": "toggle",
+              "needs_onroad_cycle": true
             },
             {
               "key": "RecordAudio",
-              "widget": "toggle"
+              "widget": "toggle",
+              "needs_onroad_cycle": true
             }
           ]
         },
@@ -937,6 +940,7 @@
             {
               "key": "AlphaLongitudinalEnabled",
               "widget": "toggle",
+              "needs_onroad_cycle": true,
               "visibility": [
                 {
                   "type": "all",
@@ -1168,6 +1172,7 @@
         {
           "key": "ToyotaEnforceStockLongitudinal",
           "widget": "toggle",
+          "needs_onroad_cycle": true,
           "enablement": [
             {
               "type": "offroad_only"
@@ -1177,6 +1182,7 @@
         {
           "key": "ToyotaStopAndGoHack",
           "widget": "toggle",
+          "needs_onroad_cycle": true,
           "enablement": [
             {
               "type": "offroad_only"

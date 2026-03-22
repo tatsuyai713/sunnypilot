@@ -29,7 +29,7 @@ from openpilot.sunnypilot import get_sanitize_int_param
 from openpilot.sunnypilot.selfdrive.car.car_specific import CarSpecificEventsSP
 from openpilot.sunnypilot.selfdrive.car.cruise_helpers import CruiseHelper
 from openpilot.sunnypilot.selfdrive.car.intelligent_cruise_button_management.controller import IntelligentCruiseButtonManagement
-from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
+from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP, EventNameSP
 
 REPLAY = "REPLAY" in os.environ
 SIMULATION = "SIMULATION" in os.environ
@@ -165,6 +165,7 @@ class SelfdriveD(CruiseHelper):
 
     self.events_sp = EventsSP()
     self.events_sp_prev = []
+    self.remote_cycle_pending = False
 
     self.mads = ModularAssistiveDrivingSystem(self)
     self.icbm = IntelligentCruiseButtonManagement(self.CP, self.CP_SP)
@@ -236,6 +237,10 @@ class SelfdriveD(CruiseHelper):
         (CS.brakePressed and (not self.CS_prev.brakePressed or not CS.standstill)) or \
         (CS.regenBraking and (not self.CS_prev.regenBraking or not CS.standstill)):
         self.events.add(EventName.pedalPressed)
+
+    # Remote onroad cycle pending via sunnylink
+    if self.remote_cycle_pending:
+      self.events_sp.add(custom.OnroadEventSP.EventName.remoteCyclePending)
 
     # Create events for temperature, disk space, and memory
     if self.sm['deviceState'].thermalStatus >= ThermalStatus.red:
@@ -597,6 +602,7 @@ class SelfdriveD(CruiseHelper):
       self.experimental_mode = self.params.get_bool("ExperimentalMode") and self.CP.openpilotLongitudinalControl
       self.personality = self.params.get("LongitudinalPersonality", return_default=True)
 
+      self.remote_cycle_pending = self.params.get_bool("OnroadCyclePendingRemote")
       self.mads.read_params()
       time.sleep(0.1)
 

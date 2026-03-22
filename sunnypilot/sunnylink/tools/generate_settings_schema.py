@@ -140,8 +140,9 @@ def _enrich_schema(schema: dict, metadata: dict) -> None:
       for item in sub_panel.get("items", []):
         _enrich_item(item, metadata)
 
-  for brand_items in schema.get("vehicle_settings", {}).values():
-    for item in brand_items:
+  for brand_data in schema.get("vehicle_settings", {}).values():
+    items = brand_data.get("items", []) if isinstance(brand_data, dict) else brand_data
+    for item in items:
       _enrich_item(item, metadata)
 
 
@@ -256,8 +257,9 @@ def _walk_all_items(schema: dict, visitor: Callable[[dict], None]) -> None:
       for item in sp.get("items", []):
         _visit_item(item)
 
-  for brand_items in schema.get("vehicle_settings", {}).values():
-    for item in brand_items:
+  for brand_data in schema.get("vehicle_settings", {}).values():
+    items = brand_data.get("items", []) if isinstance(brand_data, dict) else brand_data
+    for item in items:
       _visit_item(item)
 
 

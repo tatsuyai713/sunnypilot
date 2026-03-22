@@ -38,6 +38,8 @@ class SunnylinkLayoutMici(NavScroller):
     self._restore_btn.set_click_callback(lambda: self._handle_backup_restore_btn(restore=True))
     self._sunnylink_uploader_toggle = BigToggle(text=tr("sunnylink uploader"), initial_state=False,
                                                 toggle_callback=self._sunnylink_uploader_callback)
+    self._auto_apply_cycle_toggle = BigToggle(text=tr("auto apply remote cycle"), initial_state=False,
+                                               toggle_callback=self._auto_apply_cycle_callback)
 
     self._scroller.add_widgets([
       self._sunnylink_toggle,
@@ -45,7 +47,8 @@ class SunnylinkLayoutMici(NavScroller):
       self._sunnylink_pair_button,
       self._backup_btn,
       self._restore_btn,
-      self._sunnylink_uploader_toggle
+      self._sunnylink_uploader_toggle,
+      self._auto_apply_cycle_toggle,
     ])
 
   def _update_state(self):
@@ -57,6 +60,8 @@ class SunnylinkLayoutMici(NavScroller):
     self._backup_btn.set_visible(self._sunnylink_enabled)
     self._restore_btn.set_visible(self._sunnylink_enabled)
     self._sunnylink_uploader_toggle.set_visible(self._sunnylink_enabled)
+    self._auto_apply_cycle_toggle.set_visible(self._sunnylink_enabled)
+    self._auto_apply_cycle_toggle.set_checked(ui_state.params.get_bool("AutoApplyRemoteOnroadCycle"))
     self.handle_backup_restore_progress()
 
     if ui_state.sunnylink_state.is_sponsor():
@@ -98,6 +103,21 @@ class SunnylinkLayoutMici(NavScroller):
       ui_state.params.put_bool("SunnylinkEnabled", state)
 
     ui_state.update_params()
+
+  @staticmethod
+  def _auto_apply_cycle_callback(state: bool):
+    if state:
+      def _confirm():
+        ui_state.params.put_bool("AutoApplyRemoteOnroadCycle", True)
+
+      dlg = BigConfirmationDialog(
+        title="slide to enable\nauto apply",
+        icon=gui_app.texture("icons_mici/settings/device/update.png", 64, 64),
+        confirm_callback=_confirm,
+      )
+      gui_app.push_widget(dlg)
+    else:
+      ui_state.params.put_bool("AutoApplyRemoteOnroadCycle", state)
 
   @staticmethod
   def _sunnylink_uploader_callback(state: bool):

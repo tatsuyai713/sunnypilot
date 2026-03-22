@@ -180,6 +180,12 @@ class SunnylinkLayout(Widget):
                   tr("(Only for highest tiers, and does NOT bring ANY benefit to you yet. We are just testing data volume.)"),
       param="EnableSunnylinkUploader"
     )
+    self._auto_apply_cycle_toggle = toggle_item_sp(
+      title=tr("Auto Apply Remote Onroad Cycle"),
+      description=tr("When enabled, remote settings changes requiring a restart will apply automatically without prompting."),
+      param="AutoApplyRemoteOnroadCycle",
+      callback=self._auto_apply_cycle_callback
+    )
     self._sunnylink_backup_restore_buttons = dual_button_item(
       description="",
       left_text=tr("Backup Settings"),
@@ -203,6 +209,8 @@ class SunnylinkLayout(Widget):
       self._pair_btn,
       LineSeparator(),
       self._sunnylink_uploader_toggle,
+      LineSeparator(),
+      self._auto_apply_cycle_toggle,
       LineSeparator(),
       self._sunnylink_backup_restore_buttons
     ]
@@ -303,6 +311,24 @@ class SunnylinkLayout(Widget):
       self._restore_btn.set_enabled(can_enable)
       self._restore_btn.set_text(tr("Restore Settings"))
 
+  def _auto_apply_cycle_callback(self, state: bool):
+    if state:
+      def confirm_callback(result: DialogResult):
+        if result == DialogResult.CONFIRM:
+          ui_state.params.put_bool("AutoApplyRemoteOnroadCycle", True)
+        else:
+          self._auto_apply_cycle_toggle.action_item.set_state(False)
+
+      dlg = ConfirmDialog(
+        text=tr("Skip future confirmations?") + "\n\n" +
+             tr("Remote setting changes will apply automatically with a brief system restart. No prompt will be shown."),
+        confirm_text=tr("Enable"),
+        callback=confirm_callback
+      )
+      gui_app.push_widget(dlg)
+    else:
+      ui_state.params.put_bool("AutoApplyRemoteOnroadCycle", state)
+
   def _sunnylink_toggle_callback(self, state: bool):
     sl_consent: bool = ui_state.params.get("CompletedSunnylinkConsentVersion") == sunnylink_consent_version
     sl_enabled: bool = ui_state.params.get_bool("SunnylinkEnabled")
@@ -340,6 +366,7 @@ class SunnylinkLayout(Widget):
     self._sunnylink_toggle.action_item.set_enabled(not ui_state.is_onroad())
     self._sunnylink_toggle.action_item.set_state(self._sunnylink_enabled)
     self._sunnylink_uploader_toggle.action_item.set_enabled(self._sunnylink_enabled)
+    self._auto_apply_cycle_toggle.action_item.set_enabled(self._sunnylink_enabled)
     self.handle_backup_restore_progress()
 
     sponsor_btn_text = tr("THANKS ♥") if ui_state.sunnylink_state.is_sponsor() else tr("SPONSOR")
