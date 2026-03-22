@@ -90,8 +90,8 @@ class DesireHelper:
                          ((carstate.steeringTorque > 0 and self.lane_change_direction == LaneChangeDirection.left) or
                           (carstate.steeringTorque < 0 and self.lane_change_direction == LaneChangeDirection.right))
 
-        button_applied = (carstate.leftButtonBlinkerNudge and self.lane_change_direction == LaneChangeDirection.left) or
-                          (carstate.rightButtonBlinkerNudge and self.lane_change_direction == LaneChangeDirection.right)
+        button_applied = ((carstate.leftButtonBlinkerNudge and self.lane_change_direction == LaneChangeDirection.left) or
+                          (carstate.rightButtonBlinkerNudge and self.lane_change_direction == LaneChangeDirection.right))
 
         blindspot_detected = ((carstate.leftBlindspot and self.lane_change_direction == LaneChangeDirection.left) or
                               (carstate.rightBlindspot and self.lane_change_direction == LaneChangeDirection.right))
