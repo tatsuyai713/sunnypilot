@@ -406,10 +406,16 @@
       "description": "Longitudinal control, speed limits, and cruise behavior",
       "sections": [
         {
-          "id": "driving_personality",
-          "title": "Driving Personality",
-          "description": "Adjust how aggressively the car follows traffic",
+          "id": "core_cruise_features",
+          "title": "",
+          "description": "",
           "items": [
+            {
+              "key": "DisengageOnAccelerator",
+              "widget": "toggle",
+              "title": "Disengage Cruise on Accelerator Pedal",
+              "description": "When enabled, pressing the accelerator pedal will disengage longitudinal control."
+            },
             {
               "key": "LongitudinalPersonality",
               "widget": "multiple_button",
@@ -1160,12 +1166,6 @@
                 }
               ],
               "title": "Experimental Mode"
-            },
-            {
-              "key": "DisengageOnAccelerator",
-              "widget": "toggle",
-              "title": "Disengage on Accelerator Pedal",
-              "description": "When enabled, pressing the accelerator pedal will disengage sunnypilot."
             },
             {
               "key": "IsLdwEnabled",
