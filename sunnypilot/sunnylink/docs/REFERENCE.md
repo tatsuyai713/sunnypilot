@@ -134,7 +134,9 @@ Root
   "description": "Modified Assistive Driving Safety",
   "order": 1,
   "items": [...],
-  "sub_panels": [...]
+  "sub_panels": [...],
+  "visibility": [{"type": "capability", "field": "has_longitudinal_control", "equals": true}],
+  "enablement": [{"type": "offroad_only"}]
 }
 ```
 
@@ -144,6 +146,8 @@ Root
 | `title` | Yes | Section header displayed above the card |
 | `description` | No | Subtitle below the section header |
 | `order` | No | Sort order within the panel (falls back to array position) |
+| `visibility` | No | Rules controlling if the entire section is visible. When rules fail, section is dimmed. |
+| `enablement` | No | Rules controlling if the entire section is enabled. When rules fail, all items within are disabled. |
 | `items` | No | Settings within this section |
 | `sub_panels` | No | Drill-down pages triggered by items in this section |
 
@@ -165,14 +169,16 @@ Root
 | `widget` | Yes | One of: `toggle`, `option`, `multiple_button`, `button`, `info` |
 | `title` | Yes | Display name shown to the user |
 | `description` | No | Explanatory text below the title. Supports `<br>` for line breaks. |
-| `options` | For selectors | Array of `{"value": 0, "label": "Off"}` for `option` or `multiple_button` widgets |
+| `options` | For selectors | Array of `{"value": 0, "label": "Off"}` for `option` or `multiple_button` widgets. Each option can have `enablement` rules. |
 | `min` | For sliders | Minimum value (renders `option` widget as a slider) |
 | `max` | For sliders | Maximum value |
 | `step` | For sliders | Step increment |
 | `unit` | No | Unit label. Static: `"seconds"`. Dynamic: `{"metric": "km/h", "imperial": "mph"}` (frontend resolves based on `IsMetric` param). See [Dynamic Units](#dynamic-units). |
 | `value_map` | No | Maps stored values to display labels |
-| `visibility` | No | Rules that control show/hide (all must pass) |
-| `enablement` | No | Rules that control enabled/disabled (all must pass) |
+| `visibility` | No | Rules controlling visibility. Settings are **never hidden**, always dimmed with UNAVAILABLE badge when rules fail. See [Visibility vs Enablement](#visibility-vs-enablement). |
+| `enablement` | No | Rules controlling enabled/disabled state. Greyed out with contextual badge when rules fail. |
+| `blocked` | No | When `true`, this param cannot be modified remotely (device-only). Frontend shows as read-only. |
+| `title_param_suffix` | No | Dynamic title suffix. Object with `param` (param key) and `values` (mapping of param values to suffix strings). |
 | `sub_items` | No | Child items that appear indented below this item |
 | `needs_onroad_cycle` | No | When `true`, this param requires an onroad cycle to take effect. See [Remote Onroad Cycle](#remote-onroad-cycle) |
 
@@ -223,13 +229,22 @@ Root
 
 ---
 
+## Visibility vs Enablement
+
+**Critical design difference:**
+
+- **`visibility` rules** (NEW): Settings are **never hidden**. When rules fail, the setting is **dimmed with an UNAVAILABLE badge** so users know it exists but isn't applicable. This prevents confusion and preserves UI stability.
+
+- **`enablement` rules**: When rules fail, the setting is **greyed out** with a contextual badge explaining why (e.g., "Requires longitudinal control"). User can still see it exists.
+
+The "dim instead of hide" approach (visibility-based dimming instead of hiding) provides better UX: settings remain discoverable, and users understand why a setting is unavailable.
+
 ## Rules Reference
 
-Rules control **visibility** (show/hide) and **enablement** (enabled/greyed out).
+Rules control **visibility** (dimmed) and **enablement** (greyed out).
 
-- `visibility` rules: if ANY rule fails, the item is **completely hidden**
-- `enablement` rules: if ANY rule fails, the item is **visible but greyed out**
-- All rules in an array use **AND** logic (all must pass)
+- All rules in an array use **AND** logic (all must pass for the rule to pass)
+- If ANY rule fails, the condition is unsatisfied
 - Empty array or no rules = always visible/enabled
 
 ### offroad_only
@@ -254,25 +269,29 @@ Checks a vehicle capability derived from CarParams at runtime.
 {"type": "capability", "field": "brand", "equals": "toyota"}
 ```
 
+**Permissive evaluation**: When brand is empty (no car fingerprinted yet), capability rules are **permissive** (return `true`). This prevents hiding settings before capabilities load. Once capabilities arrive, rules are evaluated normally.
+
 **Available capability fields:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `has_longitudinal_control` | bool | Car supports openpilot longitudinal |
-| `has_icbm` | bool | Intelligent Cruise Button Management active |
-| `icbm_available` | bool | ICBM is available for this car |
-| `torque_allowed` | bool | Torque lateral control supported |
-| `brand` | string | Vehicle brand (e.g., "toyota", "hyundai") |
-| `pcm_cruise` | bool | PCM cruise control |
-| `alpha_long_available` | bool | Alpha longitudinal available |
-| `steer_control_type` | string | Steering control type (e.g., "angle", "torque") |
-| `enable_bsm` | bool | Blind spot monitoring available |
-| `is_release` | bool | Running release branch |
-| `is_sp_release` | bool | Running sunnypilot release branch |
-| `is_development` | bool | Running development branch |
-| `tesla_has_vehicle_bus` | bool | Tesla with vehicle bus access |
-| `has_stop_and_go` | bool | Stop and go capability |
-| `stock_longitudinal` | bool | Using stock longitudinal control |
+| Field | Type | Description | Label (from schema) |
+|-------|------|-------------|-------------------|
+| `has_longitudinal_control` | bool | Car supports openpilot longitudinal | "sunnypilot longitudinal control" |
+| `has_icbm` | bool | Intelligent Cruise Button Management active | "ICBM enabled" |
+| `icbm_available` | bool | ICBM is available for this car | "ICBM available" |
+| `torque_allowed` | bool | Torque lateral control supported | "torque steering (not available for angle steering vehicles)" |
+| `brand` | string | Vehicle brand (e.g., "toyota", "hyundai") | "Vehicle brand" |
+| `pcm_cruise` | bool | PCM cruise control | "PCM cruise" |
+| `alpha_long_available` | bool | Alpha longitudinal available | "Alpha Longitudinal available" |
+| `steer_control_type` | string | Steering control type (e.g., "angle", "torque") | "Steer control type" |
+| `enable_bsm` | bool | Blind spot monitoring available | "BSM available" |
+| `is_release` | bool | Running release branch | "Release branch" |
+| `is_sp_release` | bool | Running sunnypilot release branch | "SP release branch" |
+| `is_development` | bool | Running development branch | "Development branch" |
+| `tesla_has_vehicle_bus` | bool | Tesla with vehicle bus access | "Tesla vehicle bus" |
+| `has_stop_and_go` | bool | Stop and go capability | "Stop and Go" |
+| `stock_longitudinal` | bool | Using stock longitudinal control | "stock longitudinal" |
+
+The `capability_labels` field in the schema response maps these field names to human-readable strings for UI tooltips. Fallback labels are provided by the evaluator if the schema doesn't include `capability_labels`.
 
 ### param
 
@@ -299,7 +318,7 @@ Numeric comparison against another param's value.
 
 ### not
 
-Negates a single rule.
+Negates a single rule. The setting is enabled/visible when the inner condition is **false**.
 
 ```json
 {
@@ -312,9 +331,15 @@ Negates a single rule.
 }
 ```
 
+This example: show the setting only for non-angle steering cars (i.e., when steer_control_type is NOT "angle").
+
+**Description generation**: When a negated rule fails (inner condition is true), the frontend generates an inverted message. For example:
+- Inner rule "Requires longitudinal control" → inverted to "Not available with longitudinal control disabled"
+- Inner rule "Disable X first" → inverted to "Enable X first"
+
 ### any (OR logic)
 
-Passes if **at least one** child condition passes.
+Passes if **at least one** child condition passes. The setting is enabled/visible if any condition is satisfied.
 
 ```json
 {
@@ -325,6 +350,12 @@ Passes if **at least one** child condition passes.
   ]
 }
 ```
+
+This example: show the setting if the car has either longitudinal control OR ICBM.
+
+**Description generation**: When an `any` rule fails (all conditions are false), failure reasons are joined with "or":
+- "Requires longitudinal control or ICBM available"
+- Multiple reasons with common prefix are consolidated: "Requires X or Y or Z"
 
 ### all (AND logic)
 
@@ -600,6 +631,85 @@ Before committing changes to `settings_ui.json`:
 
 ---
 
+## Per-Option Enablement
+
+Individual options within `multiple_button` or `option` widgets can have their own `enablement` rules:
+
+```json
+{
+  "key": "MadsSteeringMode",
+  "widget": "multiple_button",
+  "title": "Steering Mode on Brake Pedal",
+  "options": [
+    {
+      "value": 0,
+      "label": "Remain Active",
+      "enablement": [
+        {
+          "type": "not",
+          "condition": {"type": "capability", "field": "brand", "equals": "tesla"}
+        }
+      ]
+    },
+    {
+      "value": 1,
+      "label": "Pause",
+      "enablement": [{"type": "offroad_only"}]
+    }
+  ]
+}
+```
+
+When an option's enablement fails, that option is **greyed out** (disabled but still visible and selectable). This prevents users from changing to an unavailable option but keeps the UI stable.
+
+---
+
+## Dynamic Title Suffixes
+
+Use `title_param_suffix` to append a dynamic value to the title based on another param:
+
+```json
+{
+  "key": "FollowDistance",
+  "widget": "option",
+  "title": "Follow Distance",
+  "title_param_suffix": {
+    "param": "IsMetric",
+    "values": {"0": "mph", "1": "km/h"}
+  },
+  "min": 0.5,
+  "max": 3.0,
+  "step": 0.1
+}
+```
+
+**Result**:
+- When `IsMetric = 0`: displays "Follow Distance: mph"
+- When `IsMetric = 1`: displays "Follow Distance: km/h"
+
+The `values` object maps param values (as strings) to suffix text. Unknown param values show no suffix.
+
+---
+
+## Device-Only (Blocked) Settings
+
+Use `blocked: true` to mark a setting as device-only and not remotely configurable:
+
+```json
+{
+  "key": "OnroadCyclePendingRemote",
+  "widget": "info",
+  "title": "Pending Remote Cycle",
+  "blocked": true
+}
+```
+
+**Frontend behavior**: Displays the setting as read-only. Users cannot change it via sunnylink.
+
+**Use case**: Params that are written by the device itself (e.g., `OnroadCyclePendingRemote`, `AutoApplyRemoteOnroadCycle`) should be marked `blocked` to indicate they are not user-modifiable remotely.
+
+---
+
 ## How Capabilities Work
 
 Capabilities are **car-derived boolean/string fields** that rules can reference. They bridge CarParams (device-specific) to the schema (declarative).
@@ -629,13 +739,32 @@ Frontend rule evaluator checks capabilities.field === equals
 
 ### When capabilities are unavailable
 
-When `CarParamsPersistent` hasn't been written yet (no car detected), ALL CarParams-derived capabilities default to `False` or `""`. The frontend rule evaluator treats **null capabilities as permissive** (returns `true`) to avoid hiding settings before capabilities load. Once capabilities arrive, rules are evaluated normally.
+When `CarParamsPersistent` hasn't been written yet (no car detected), or when brand is empty, ALL CarParams-derived capabilities default to `False` or `""`.
 
-This means:
-- Items with `visibility: [capability: torque_allowed == true]` will be **temporarily visible** before caps load, then hidden if the car doesn't support torque
+**Permissive evaluation**: The frontend rule evaluator treats capability-referencing rules as **permissive** (returns `true`) when capabilities are unavailable. This prevents hiding/disabling settings before capabilities load.
+
+**Result**:
+- Items with `visibility: [capability: torque_allowed == true]` will be **temporarily visible** before caps load, then dimmed if the car doesn't support torque
 - Items with `enablement: [capability: has_longitudinal_control == true]` will be **temporarily enabled**, then disabled
+- Items without capability rules show normally regardless of capability status
 
-This is intentional -- it prevents a jarring flash of empty panels on page load.
+**Rationale**: Prevents jarring flashes of empty panels on page load. Better UX to show settings as available initially, then dim them once the actual car capabilities are known.
+
+### Capability field generation (`capabilities.py`)
+
+Device generates capabilities at runtime via `generate_capabilities()`:
+
+```
+1. Initialize all fields to defaults (False for booleans, "" for strings)
+2. Overwrite with boolean params (is_release, is_sp_release, is_development, stock_longitudinal)
+   → No CarParams dependency, always available
+3. Overwrite with CarParams-derived fields (brand, has_longitudinal_control, torque_allowed, etc.)
+   → Only if CarParamsPersistent is available
+4. Overwrite with CarParamsSP-derived fields (has_icbm, icbm_available, tesla_has_vehicle_bus)
+   → Only if CarParamsSPPersistent is available
+```
+
+Each phase preserves previous values and only overwrites if new data is available. This ensures safe initialization even if some params are missing.
 
 ---
 
@@ -664,6 +793,40 @@ The frontend detects compressed data (gzip magic bytes `H4sI`) and decompresses 
 The generator also provides helper functions used by the validator and other tools:
 - `collect_all_keys()` -- extracts all param keys referenced in items and rules
 - `collect_capability_refs()` -- extracts all capability field names from rules
+
+---
+
+## Centralized Param Enforcement
+
+The device UI enforces capability-driven constraints in `selfdrive/ui/sunnypilot/ui_state.py:_enforce_sp_constraints()`. This is the **single source of truth** for removing incompatible params from user control.
+
+**Key constraints enforced**:
+
+| Condition | Params Removed | Reason |
+|-----------|----------------|--------|
+| Angle steering car (`steerControlType == angle`) | `EnforceTorqueControl`, `NeuralNetworkLateralControl` | Angle steering doesn't support torque control |
+| No CarParams available | `EnforceTorqueControl`, `NeuralNetworkLateralControl`, `AlphaLongitudinalEnabled` | Safety: avoid stale param values |
+| Alpha longitudinal not available OR on release branch | `AlphaLongitudinalEnabled` | Feature gating |
+| No blind spot monitoring | `AutoLaneChangeBsmDelay` | Car capability |
+| No longitudinal control | `ExperimentalMode` | Feature dependency |
+| No ICBM available OR full longitudinal active | `IntelligentCruiseButtonManagement` | Conflict: can't use ICBM if full long control active |
+| No (longitudinal OR ICBM) | `CustomAccIncrementsEnabled`, `DynamicExperimentalControl`, `SmartCruiseControlVision`, `SmartCruiseControlMap` | All cruise features require at least one |
+
+**Important**: Settings layouts should **NOT** duplicate these `params.remove()` calls. The centralized enforcement is automatically applied at device boot. Layouts should instead rely on schema visibility/enablement rules to match these constraints, so the frontend can properly gate the UI.
+
+---
+
+## Frontend Component Layout
+
+The sunnylink frontend uses a consistent spacing system aligned with Linear's design language:
+
+**Spacing hierarchy**:
+- **36px** between page title and first section
+- **12px** between section title and card/items
+- **48px** between sections (card to next section title)
+- **8px** vertical gap between items within a section
+
+**SettingsPageShell component**: Provides consistent page layout with header, breadcrumb, and scrollable content area. All settings pages should wrap content in this component for visual consistency.
 
 ---
 
@@ -730,13 +893,13 @@ These are intentional differences between the device UI and the frontend renderi
 
 | Param | Device behavior | Frontend behavior | Why |
 |-------|----------------|-------------------|-----|
-| `EnforceTorqueControl` | Hidden when CP=None | Visible but disabled (torque_allowed=false) | Frontend uses permissive defaults before caps load |
-| `NeuralNetworkLateralControl` | Hidden when CP=None | Visible but disabled | Same as above |
-| `AlphaLongitudinalEnabled` | Disabled when engaged | No engagement check | Frontend can't detect real-time engagement state |
-| `SpeedLimitMode` | "Assist" option disabled for Tesla/Rivian SP release | All options enabled | Per-option disabling not supported in schema |
-| `MadsMainCruiseAllowed` | Hidden for limited MADS platforms (Tesla w/o bus, Rivian) | Visible (no platform-specific rule) | Would require new capability fields |
+| `EnforceTorqueControl` | Hidden when CP=None | Visible but dimmed (UNAVAILABLE badge) | Dim-instead-of-hide design: permissive before caps load, then dimmed if unavailable |
+| `NeuralNetworkLateralControl` | Hidden when CP=None | Visible but dimmed (UNAVAILABLE badge) | Same as above |
+| `AlphaLongitudinalEnabled` | Disabled when engaged | Disabled (no real-time engagement check) | Frontend can't detect real-time engagement state; rules use static capability checks |
+| `SpeedLimitMode` | "Assist" option disabled for Tesla/Rivian SP release | All options enabled | Per-option enablement now supported in schema |
+| `MadsMainCruiseAllowed` | Hidden for limited MADS platforms (Tesla w/o bus, Rivian) | Visible but dimmed (permissive caps) | Dim-instead-of-hide design ensures settings remain discoverable |
 | `LanguageSetting` | MultiOptionDialog picker | Read-only info display | Language change requires device reboot |
-| `TorqueControlTune` | TreeOptionDialog with version folders | Segmented buttons | Options are flat on frontend |
+| `TorqueControlTune` | TreeOptionDialog with version folders | Segmented buttons or dropdown | Options are flat on frontend; tree structure not representable in schema |
 
 ### Panels NOT in schema (device-only)
 

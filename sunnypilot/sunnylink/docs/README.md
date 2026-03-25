@@ -29,11 +29,13 @@ All metadata (titles, descriptions, options, min/max/step/unit) lives **inline o
 | `widget` | Yes | `toggle`, `option`, `multiple_button`, `button`, `info` |
 | `title` | Yes | Display name shown to the user |
 | `description` | No | Explanatory text below the title |
-| `options` | For selectors | Array of `{"value": 0, "label": "Off"}` objects |
+| `options` | For selectors | Array of `{"value": 0, "label": "Off"}` objects (see per-option enablement below) |
 | `min`, `max`, `step` | For sliders | Numeric range constraints |
 | `unit` | No | Unit label. Static: `"seconds"`. Dynamic: `{"metric": "km/h", "imperial": "mph"}` (resolved by IsMetric) |
-| `visibility` | No | Rules for show/hide (all must pass) |
-| `enablement` | No | Rules for enabled/disabled (all must pass) |
+| `visibility` | No | Rules for show/hide. Settings are **never hidden**, always dimmed with UNAVAILABLE badge when rules fail |
+| `enablement` | No | Rules for enabled/disabled (all must pass). Dimmed with badge when rules fail |
+| `blocked` | No | `true` for device-only settings that cannot be modified remotely. Frontend shows as read-only |
+| `title_param_suffix` | No | Dynamic title suffix. Example: `{"param": "IsMetric", "values": {"0": "mph", "1": "km/h"}}` |
 | `sub_items` | No | Nested child items |
 | `needs_onroad_cycle` | No | `true` if changing this param triggers a system restart. Frontend shows a "Restart" badge. See [REFERENCE.md - Remote Onroad Cycle](REFERENCE.md#remote-onroad-cycle) |
 
@@ -49,9 +51,11 @@ All metadata (titles, descriptions, options, min/max/step/unit) lives **inline o
 | `any` | `{"type": "any", "conditions": [...]}` | OR logic |
 | `all` | `{"type": "all", "conditions": [...]}` | AND logic (for nesting inside `any`/`not`) |
 
-`visibility` = hidden when rules fail. `enablement` = greyed out when rules fail.
+**Visibility design**: Settings are always visible. When visibility rules fail, the setting is dimmed with an UNAVAILABLE badge, so users know it exists but is not applicable.
 
-Capability fields: `has_longitudinal_control`, `has_icbm`, `icbm_available`, `torque_allowed`, `brand`, `pcm_cruise`, `alpha_long_available`, `steer_control_type`, `enable_bsm`, `is_release`, `is_sp_release`, `is_development`, `tesla_has_vehicle_bus`, `has_stop_and_go`, `stock_longitudinal`
+**Enablement rules**: Greyed out (disabled) when rules fail. Frontend shows a contextual badge explaining why.
+
+**Capability fields** (referenced in rules): `has_longitudinal_control`, `has_icbm`, `icbm_available`, `torque_allowed`, `brand`, `pcm_cruise`, `alpha_long_available`, `steer_control_type`, `enable_bsm`, `is_release`, `is_sp_release`, `is_development`, `tesla_has_vehicle_bus`, `has_stop_and_go`, `stock_longitudinal`
 
 ---
 
@@ -137,6 +141,42 @@ For speed or distance values that change based on the user's `IsMetric` preferen
 
 The frontend resolves the correct unit string based on the device's `IsMetric` param value. Static units (like `"seconds"`, `"m/s²"`) remain plain strings.
 
+### Add a title with dynamic suffix
+
+Use `title_param_suffix` to append a param value to the title:
+
+```json
+{
+  "key": "FollowDistance",
+  "widget": "option",
+  "title": "Follow Distance",
+  "title_param_suffix": {
+    "param": "IsMetric",
+    "values": {"0": "mph", "1": "km/h"}
+  },
+  "min": 0.5,
+  "max": 3.0,
+  "step": 0.1
+}
+```
+
+The title will display as "Follow Distance: mph" or "Follow Distance: km/h" based on the `IsMetric` param value.
+
+### Add a device-only (read-only) setting
+
+Use `blocked: true` for settings that cannot be modified remotely:
+
+```json
+{
+  "key": "OnroadCyclePendingRemote",
+  "widget": "info",
+  "title": "Pending Remote Cycle",
+  "blocked": true
+}
+```
+
+The frontend will display this as read-only and prevent any changes.
+
 ### Add a dropdown
 
 ```json
@@ -152,6 +192,32 @@ The frontend resolves the correct unit string based on the device's `IsMetric` p
 }
 ```
 
+### Per-option enablement
+
+Individual options within `multiple_button` or `option` widgets can have their own enablement rules:
+
+```json
+{
+  "key": "MadsSteeringMode",
+  "widget": "multiple_button",
+  "title": "Steering Mode on Brake Pedal",
+  "options": [
+    {
+      "value": 0,
+      "label": "Remain Active",
+      "enablement": [{"type": "capability", "field": "brand", "equals": "tesla"}]
+    },
+    {
+      "value": 1,
+      "label": "Pause",
+      "enablement": [{"type": "offroad_only"}]
+    }
+  ]
+}
+```
+
+When an option's enablement fails, that option is greyed out (disabled) but still visible.
+
 ### Show only when another setting is on
 
 ```json
@@ -162,6 +228,8 @@ The frontend resolves the correct unit string based on the device's `IsMetric` p
   "visibility": [{"type": "param", "key": "ParentToggle", "equals": true}]
 }
 ```
+
+Note: Due to the "dim instead of hide" design, this setting will be dimmed (not hidden) when the rule fails.
 
 ### Show only for certain cars
 
@@ -198,6 +266,23 @@ The frontend resolves the correct unit string based on the device's `IsMetric` p
   "id": "my_section",
   "title": "My Section",
   "description": "Optional subtitle",
+  "items": [...],
+  "enablement": [{"type": "capability", "field": "has_longitudinal_control", "equals": true}]
+}
+```
+
+Sections can have visibility and enablement rules (optional). When section-level rules fail, all items within are dimmed.
+
+### Add section-level enablement
+
+Sections can be conditionally available or enabled via `visibility` or `enablement`:
+
+```json
+{
+  "id": "longitudinal_tuning",
+  "title": "Longitudinal Tuning",
+  "description": "Advanced control parameters",
+  "visibility": [{"type": "capability", "field": "has_longitudinal_control", "equals": true}],
   "items": [...]
 }
 ```
@@ -245,10 +330,36 @@ Set `order` field on sections, or reorder the JSON array.
 
 ---
 
+### Capability labels and tooltips
+
+The schema response includes `capability_labels` which map capability field names to human-readable descriptions. These are used by the frontend to show contextual tooltips when a capability rule prevents a setting from being used.
+
+The device defines these labels in `capabilities.py:CAPABILITY_LABELS`. Examples:
+
+- `has_longitudinal_control` → "sunnypilot longitudinal control"
+- `torque_allowed` → "torque steering (not available for angle steering vehicles)"
+- `brand` → "Vehicle brand"
+
+### Centralized param enforcement
+
+The device-side UI enforces capability constraints in `selfdrive/ui/sunnypilot/ui_state.py:_enforce_sp_constraints()`. This method removes incompatible params based on car capabilities, and should be the single source of truth for such constraints.
+
+**Settings layouts should NOT duplicate these params.remove() calls.** Instead, they should rely on schema rules and the centralized enforcement. This prevents duplicate logic and ensures consistency.
+
+Example constraints in `_enforce_sp_constraints()`:
+- Angle steering cars: remove `EnforceTorqueControl` and `NeuralNetworkLateralControl`
+- No CarParams: remove all car-dependent params
+- No longitudinal: remove `ExperimentalMode`
+- No ICBM: remove `IntelligentCruiseButtonManagement`
+
 ## Pre-Commit Checklist
 
 - [ ] Param registered in `common/params_keys.h`
 - [ ] Item in `settings_ui.json` with correct widget type and `title`
 - [ ] `offroad_only` enablement for settings that shouldn't change while driving
 - [ ] `needs_onroad_cycle: true` for settings that trigger `OnroadCycleRequested` on the device UI
+- [ ] Per-option enablement rules (if applicable)
+- [ ] Section-level visibility/enablement rules (if applicable)
+- [ ] `blocked: true` for device-only settings (if applicable)
+- [ ] `title_param_suffix` for dynamic titles (if applicable)
 - [ ] `python sunnypilot/sunnylink/tools/validate_settings_ui.py` passes
