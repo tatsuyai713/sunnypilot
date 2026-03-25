@@ -31,7 +31,7 @@ import cereal.messaging as messaging
 from openpilot.sunnypilot.selfdrive.car.sync_car_list_param import update_car_list_param
 from openpilot.sunnypilot.sunnylink.api import SunnylinkApi
 from openpilot.sunnypilot.sunnylink.utils import sunnylink_need_register, sunnylink_ready, get_param_as_byte, save_param_from_base64_encoded_string
-from openpilot.sunnypilot.sunnylink.capabilities import generate_capabilities
+from openpilot.sunnypilot.sunnylink.capabilities import generate_capabilities, CAPABILITY_LABELS
 from openpilot.sunnypilot.sunnylink.tools.generate_settings_schema import generate_schema
 
 SUNNYLINK_ATHENA_HOST = os.getenv('SUNNYLINK_ATHENA_HOST', 'wss://ws.stg.api.sunnypilot.ai')
@@ -247,6 +247,7 @@ def getParamsMetadata() -> str:
   try:
     schema = generate_schema()
     schema["capabilities"] = generate_capabilities()
+    schema["capability_labels"] = CAPABILITY_LABELS
     raw = json.dumps(schema, separators=(",", ":")).encode("utf-8")
     return base64.b64encode(gzip.compress(raw)).decode("utf-8")
   except Exception:

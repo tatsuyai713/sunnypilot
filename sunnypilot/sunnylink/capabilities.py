@@ -7,6 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 import json
 
 from cereal import car, custom, messaging
+from opendbc.sunnypilot.car.tesla.values import TeslaFlagsSP
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 
@@ -30,6 +31,24 @@ CAPABILITY_FIELDS = (
   "has_stop_and_go",
   "stock_longitudinal",
 )
+
+CAPABILITY_LABELS: dict[str, str] = {
+  "has_longitudinal_control": "sunnypilot longitudinal control",
+  "has_icbm": "ICBM enabled",
+  "icbm_available": "ICBM available",
+  "torque_allowed": "Torque lateral control",
+  "brand": "Vehicle brand",
+  "pcm_cruise": "PCM cruise",
+  "alpha_long_available": "Alpha Longitudinal available",
+  "steer_control_type": "Steer control type",
+  "enable_bsm": "BSM available",
+  "is_release": "Release branch",
+  "is_sp_release": "SP release branch",
+  "is_development": "Development branch",
+  "tesla_has_vehicle_bus": "Tesla vehicle bus",
+  "has_stop_and_go": "Stop and Go",
+  "stock_longitudinal": "stock longitudinal",
+}
 
 # Explicit defaults for non-boolean capability fields
 CAPABILITY_DEFAULTS: dict[str, bool | str] = {
@@ -86,15 +105,8 @@ def generate_capabilities(params: Params | None = None) -> dict:
     try:
       CP_SP = messaging.log_from_bytes(CP_SP_bytes, custom.CarParamsSP)
       caps["icbm_available"] = bool(CP_SP.intelligentCruiseButtonManagementAvailable)
-      caps["has_icbm"] = (
-        bool(CP_SP.intelligentCruiseButtonManagementAvailable) and
-        params.get_bool("IntelligentCruiseButtonManagement")
-      )
-      try:
-        from openpilot.sunnypilot.selfdrive.car.tesla.values import TeslaFlagsSP
-        caps["tesla_has_vehicle_bus"] = bool(CP_SP.flags & TeslaFlagsSP.HAS_VEHICLE_BUS)
-      except (ImportError, AttributeError):
-        caps["tesla_has_vehicle_bus"] = False
+      caps["has_icbm"] = bool(CP_SP.intelligentCruiseButtonManagementAvailable) and params.get_bool("IntelligentCruiseButtonManagement")
+      caps["tesla_has_vehicle_bus"] = bool(CP_SP.flags & TeslaFlagsSP.HAS_VEHICLE_BUS)
     except Exception:
       cloudlog.exception("capabilities: failed to deserialize CarParamsSPPersistent")
 

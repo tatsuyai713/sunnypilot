@@ -1509,7 +1509,8 @@
             {
               "key": "SshEnabled",
               "widget": "toggle",
-              "title": "Enable SSH"
+              "title": "Enable SSH",
+              "blocked": true
             },
             {
               "key": "JoystickDebugMode",
@@ -1595,8 +1596,8 @@
         },
         {
           "id": "advanced_services",
-          "title": "Advanced Services",
-          "description": "Additional services and boot options",
+          "title": "Advanced Settings",
+          "description": "",
           "items": [
             {
               "key": "ShowAdvancedControls",
