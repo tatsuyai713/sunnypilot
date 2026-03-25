@@ -177,6 +177,13 @@
           "id": "torque",
           "title": "Torque Control",
           "description": "Steering torque tuning and lateral control method",
+          "enablement": [
+            {
+              "type": "capability",
+              "field": "torque_allowed",
+              "equals": true
+            }
+          ],
           "items": [
             {
               "key": "EnforceTorqueControl",
@@ -537,6 +544,14 @@
               "enablement": [
                 {
                   "type": "offroad_only"
+                },
+                {
+                  "type": "not",
+                  "condition": {
+                    "type": "capability",
+                    "field": "has_longitudinal_control",
+                    "equals": true
+                  }
                 }
               ],
               "title": "Intelligent Cruise Button Management (ICBM) (Alpha)"
@@ -560,9 +575,22 @@
                   "type": "any",
                   "conditions": [
                     {
-                      "type": "capability",
-                      "field": "has_longitudinal_control",
-                      "equals": true
+                      "type": "all",
+                      "conditions": [
+                        {
+                          "type": "capability",
+                          "field": "has_longitudinal_control",
+                          "equals": true
+                        },
+                        {
+                          "type": "not",
+                          "condition": {
+                            "type": "capability",
+                            "field": "pcm_cruise",
+                            "equals": true
+                          }
+                        }
+                      ]
                     },
                     {
                       "type": "capability",
@@ -784,7 +812,14 @@
                 }
               ],
               "enablement": [
-                { "type": "offroad_only" }
+                { "type": "offroad_only" },
+                {
+                  "type": "any",
+                  "conditions": [
+                    { "type": "capability", "field": "has_longitudinal_control", "equals": true },
+                    { "type": "capability", "field": "has_icbm", "equals": true }
+                  ]
+                }
               ],
               "title": "Smart Cruise Control - Vision",
               "description": "Use vision path predictions to estimate the appropriate speed to drive through turns ahead."
@@ -810,7 +845,14 @@
                 }
               ],
               "enablement": [
-                { "type": "offroad_only" }
+                { "type": "offroad_only" },
+                {
+                  "type": "any",
+                  "conditions": [
+                    { "type": "capability", "field": "has_longitudinal_control", "equals": true },
+                    { "type": "capability", "field": "has_icbm", "equals": true }
+                  ]
+                }
               ],
               "title": "Smart Cruise Control - Map",
               "description": "Use map data to estimate the appropriate speed to drive through turns ahead."
