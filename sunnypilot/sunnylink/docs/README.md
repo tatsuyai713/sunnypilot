@@ -53,7 +53,7 @@ All metadata (titles, descriptions, options, min/max/step/unit) lives **inline o
 
 **Visibility design**: Settings are always visible. When visibility rules fail, the setting is dimmed with an UNAVAILABLE badge, so users know it exists but is not applicable.
 
-**Enablement rules**: Greyed out (disabled) when rules fail. Frontend shows a contextual badge explaining why.
+**Enablement rules**: Grayed out (disabled) when rules fail. Frontend shows a contextual badge explaining why.
 
 **Capability fields** (referenced in rules): `has_longitudinal_control`, `has_icbm`, `icbm_available`, `torque_allowed`, `brand`, `pcm_cruise`, `alpha_long_available`, `steer_control_type`, `enable_bsm`, `is_release`, `is_sp_release`, `is_development`, `tesla_has_vehicle_bus`, `has_stop_and_go`, `stock_longitudinal`
 
@@ -216,7 +216,7 @@ Individual options within `multiple_button` or `option` widgets can have their o
 }
 ```
 
-When an option's enablement fails, that option is greyed out (disabled) but still visible.
+When an option's enablement fails, that option is grayed out (disabled) but still visible.
 
 ### Show only when another setting is on
 
@@ -246,16 +246,16 @@ Note: Due to the "dim instead of hide" design, this setting will be dimmed (not 
 
 ```json
 {
-  "key": "OptionA",
+  "key": "FeatureAlpha",
   "widget": "toggle",
-  "title": "Option A",
-  "enablement": [{"type": "param", "key": "OptionB", "equals": false}]
+  "title": "Feature Alpha",
+  "enablement": [{"type": "param", "key": "FeatureBeta", "equals": false}]
 },
 {
-  "key": "OptionB",
+  "key": "FeatureBeta",
   "widget": "toggle",
-  "title": "Option B",
-  "enablement": [{"type": "param", "key": "OptionA", "equals": false}]
+  "title": "Feature Beta",
+  "enablement": [{"type": "param", "key": "FeatureAlpha", "equals": false}]
 }
 ```
 

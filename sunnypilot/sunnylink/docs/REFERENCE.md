@@ -176,7 +176,7 @@ Root
 | `unit` | No | Unit label. Static: `"seconds"`. Dynamic: `{"metric": "km/h", "imperial": "mph"}` (frontend resolves based on `IsMetric` param). See [Dynamic Units](#dynamic-units). |
 | `value_map` | No | Maps stored values to display labels |
 | `visibility` | No | Rules controlling visibility. Settings are **never hidden**, always dimmed with UNAVAILABLE badge when rules fail. See [Visibility vs Enablement](#visibility-vs-enablement). |
-| `enablement` | No | Rules controlling enabled/disabled state. Greyed out with contextual badge when rules fail. |
+| `enablement` | No | Rules controlling enabled/disabled state. Grayed out with contextual badge when rules fail. |
 | `blocked` | No | When `true`, this param cannot be modified remotely (device-only). Frontend shows as read-only. |
 | `title_param_suffix` | No | Dynamic title suffix. Object with `param` (param key) and `values` (mapping of param values to suffix strings). |
 | `sub_items` | No | Child items that appear indented below this item |
@@ -235,13 +235,13 @@ Root
 
 - **`visibility` rules** (NEW): Settings are **never hidden**. When rules fail, the setting is **dimmed with an UNAVAILABLE badge** so users know it exists but isn't applicable. This prevents confusion and preserves UI stability.
 
-- **`enablement` rules**: When rules fail, the setting is **greyed out** with a contextual badge explaining why (e.g., "Requires longitudinal control"). User can still see it exists.
+- **`enablement` rules**: When rules fail, the setting is **grayed out** with a contextual badge explaining why (e.g., "Requires longitudinal control"). User can still see it exists.
 
 The "dim instead of hide" approach (visibility-based dimming instead of hiding) provides better UX: settings remain discoverable, and users understand why a setting is unavailable.
 
 ## Rules Reference
 
-Rules control **visibility** (dimmed) and **enablement** (greyed out).
+Rules control **visibility** (dimmed) and **enablement** (grayed out).
 
 - All rules in an array use **AND** logic (all must pass for the rule to pass)
 - If ANY rule fails, the condition is unsatisfied
@@ -660,7 +660,7 @@ Individual options within `multiple_button` or `option` widgets can have their o
 }
 ```
 
-When an option's enablement fails, that option is **greyed out** (disabled but still visible and selectable). This prevents users from changing to an unavailable option but keeps the UI stable.
+When an option's enablement fails, that option is **grayed out** (disabled but still visible and selectable). This prevents users from changing to an unavailable option but keeps the UI stable.
 
 ---
 
@@ -1057,7 +1057,7 @@ At device boot, the generator reads `settings_ui.json`, compresses it, and write
 
 **Q: What's the difference between `visibility` and `enablement`?**
 - `visibility`: hidden entirely when rules fail (user doesn't know it exists)
-- `enablement`: visible but greyed out when rules fail (user sees it but can't change it)
+- `enablement`: visible but grayed out when rules fail (user sees it but can't change it)
 
 **Q: How do I test my changes locally?**
 Run the generator directly to see the full output:

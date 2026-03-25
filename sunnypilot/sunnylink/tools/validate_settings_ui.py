@@ -284,8 +284,10 @@ def check_structural(data: dict, result: ValidationResult) -> None:
     if "widget" not in item:
       errors.append(f"{path}: item missing required field 'widget'")
     elif item["widget"] not in VALID_WIDGETS:
-      errors.append(f"{path}: item '{item.get('key', '?')}' has invalid widget '{item['widget']}' "
-                     f"(must be one of {VALID_WIDGETS})")
+      errors.append(
+        f"{path}: item '{item.get('key', '?')}' has invalid widget '{item['widget']}'"
+        + f" (must be one of {VALID_WIDGETS})"
+      )
 
   if errors:
     result.error("structural", "; ".join(errors))
@@ -298,7 +300,7 @@ def check_item_completeness(data: dict, result: ValidationResult) -> None:
   all_items = collect_all_items(data)
   issues: list[str] = []
 
-  for path, item in all_items:
+  for _path, item in all_items:
     key = item.get("key", "unknown")
     if "title" not in item:
       issues.append(f"{key}: missing 'title'")
@@ -350,7 +352,6 @@ def check_no_duplicate_keys(data: dict, result: ValidationResult) -> None:
 def check_rule_wellformedness(data: dict, result: ValidationResult) -> None:
   """Check 5: All rules have valid structure."""
   all_items = collect_all_items(data)
-  has_errors = False
 
   # Save current error count to detect new errors
   error_count_before = len(result.failed)
@@ -358,8 +359,7 @@ def check_rule_wellformedness(data: dict, result: ValidationResult) -> None:
   for path, item in all_items:
     for ctx, rules in collect_rules_from_item(item):
       for i, rule in enumerate(rules):
-        if not validate_rule(rule, f"{path} > {ctx}[{i}]", result, CAPABILITY_FIELDS):
-          has_errors = True
+        validate_rule(rule, f"{path} > {ctx}[{i}]", result, CAPABILITY_FIELDS)
 
   # Also validate trigger_condition rules on sub_panels
   for panel in data.get("panels", []):
@@ -438,15 +438,19 @@ def check_sub_panel_triggers(data: dict, result: ValidationResult) -> None:
       for sp in section.get("sub_panels", []):
         trigger = sp.get("trigger_key")
         if trigger and trigger not in panel_keys:
-          errors.append(f"sub_panel '{sp.get('id', '?')}' trigger_key '{trigger}' "
-                        f"not found in panel '{pid}'")
+          errors.append(
+            f"sub_panel '{sp.get('id', '?')}' trigger_key '{trigger}'"
+            + f" not found in panel '{pid}'"
+          )
 
     # Check top-level sub_panels
     for sp in panel.get("sub_panels", []):
       trigger = sp.get("trigger_key")
       if trigger and trigger not in panel_keys:
-        errors.append(f"sub_panel '{sp.get('id', '?')}' trigger_key '{trigger}' "
-                      f"not found in panel '{pid}'")
+        errors.append(
+          f"sub_panel '{sp.get('id', '?')}' trigger_key '{trigger}'"
+          + f" not found in panel '{pid}'"
+        )
 
   if errors:
     result.error("sub-panel triggers", "; ".join(errors))
