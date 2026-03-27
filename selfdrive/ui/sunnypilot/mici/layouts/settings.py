@@ -6,7 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 from openpilot.selfdrive.ui.mici.layouts.settings import settings as OP
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton, BigCircleButton
-from openpilot.selfdrive.ui.mici.widgets.dialog import BigConfirmationDialogV2
+from openpilot.selfdrive.ui.mici.widgets.dialog import BigConfirmationDialog
 from openpilot.selfdrive.ui.sunnypilot.mici.layouts.sunnylink import SunnylinkLayoutMici
 from openpilot.selfdrive.ui.sunnypilot.mici.layouts.models import ModelsLayoutMici
 from openpilot.selfdrive.ui.ui_state import ui_state
@@ -20,6 +20,9 @@ class SettingsLayoutSP(OP.SettingsLayout):
   def __init__(self):
     OP.SettingsLayout.__init__(self)
 
+    self.icon_disable = gui_app.texture("../../sunnypilot/selfdrive/assets/icons_mici/disable_offroad.png", 110, 110)
+    self.icon_lkas = gui_app.texture("icons_mici/settings/device/lkas.png", 110, 110)
+
     sunnylink_panel = SunnylinkLayoutMici(back_callback=gui_app.pop_widget)
     sunnylink_btn = BigButton("sunnylink", "", gui_app.texture("icons_mici/settings/developer/ssh.png", ICON_SIZE, ICON_SIZE))
     sunnylink_btn.set_click_callback(lambda: gui_app.push_widget(sunnylink_panel))
@@ -28,8 +31,7 @@ class SettingsLayoutSP(OP.SettingsLayout):
     models_btn = BigButton("models", "", gui_app.texture("../../sunnypilot/selfdrive/assets/offroad/icon_models.png", ICON_SIZE, ICON_SIZE))
     models_btn.set_click_callback(lambda: gui_app.push_widget(models_panel))
 
-    self.disable_always_offroad_btn = BigCircleButton("../../sunnypilot/selfdrive/assets/icons_mici/disable_offroad.png",
-                                                      red=False, icon_size=(120, 120))
+    self.disable_always_offroad_btn = BigCircleButton(self.icon_disable, red=False)
     self.disable_always_offroad_btn.set_click_callback(self._disable_always_offroad)
 
     items = self._scroller._items.copy()
@@ -52,6 +54,5 @@ class SettingsLayoutSP(OP.SettingsLayout):
       ui_state.params.put_bool("OffroadMode", False)
       self.disable_always_offroad_btn.set_visible(False)
 
-    dlg = BigConfirmationDialogV2(tr("slide to exit always offroad"), "icons_mici/settings/device/lkas.png",
-                                  red=True, confirm_callback=_do_disable)
+    dlg = BigConfirmationDialog(tr("slide to exit always offroad"), self.icon_lkas, red=True, confirm_callback=_do_disable)
     gui_app.push_widget(dlg)
