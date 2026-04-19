@@ -49,6 +49,9 @@ def long_maneuver(started: bool, params: Params, CP: car.CarParams) -> bool:
 def lat_maneuver(started: bool, params: Params, CP: car.CarParams) -> bool:
   return started and params.get_bool("LateralManeuverMode")
 
+def lat_postprocess(started: bool, params: Params, CP: car.CarParams) -> bool:
+  return started and params.get_bool("LateralPostProcessEnabled")
+
 def not_long_maneuver(started: bool, params: Params, CP: car.CarParams) -> bool:
   return started and not params.get_bool("LongitudinalManeuverMode")
 
@@ -181,6 +184,9 @@ procs += [
 
   # locationd
   NativeProcess("locationd_llk", "sunnypilot/selfdrive/locationd", ["./locationd"], only_onroad),
+
+  # Lateral post-processing (Algorithm D)
+  PythonProcess("lateral_postprocessd", "sunnypilot.selfdrive.controls.lateral_postprocessd", and_(lat_postprocess, not_joystick, iscar)),
 ]
 
 if os.path.exists("./github_runner.sh"):

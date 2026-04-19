@@ -96,6 +96,12 @@ class SteeringLayout(Widget):
       title=lambda: tr("Neural Network Lateral Control (NNLC)"),
       description=""
     )
+    self._lat_postprocess_toggle = toggle_item_sp(
+      param="LateralPostProcessEnabled",
+      title=lambda: tr("Lateral Path Post-Processing"),
+      description=lambda: tr("Smooths steering by blending preview curvature shaping with temporal path fusion. "
+                              "Reduces jitter and improves path stability."),
+    )
 
     items = [
       self._mads_toggle,
@@ -111,6 +117,8 @@ class SteeringLayout(Widget):
       self._torque_customization_button,
       LineSeparatorSP(40),
       self._nnlc_toggle,
+      LineSeparatorSP(40),
+      self._lat_postprocess_toggle,
     ]
     return items
 
@@ -145,6 +153,7 @@ class SteeringLayout(Widget):
     self._nnlc_toggle.action_item.set_enabled(ui_state.is_offroad() and torque_allowed and not enforce_torque_enabled)
     self._torque_control_toggle.action_item.set_enabled(ui_state.is_offroad() and torque_allowed and not nnlc_enabled)
     self._torque_customization_button.action_item.set_enabled(self._torque_control_toggle.action_item.get_state())
+    self._lat_postprocess_toggle.action_item.set_enabled(ui_state.is_offroad())
 
   def _render(self, rect):
     if self._current_panel == PanelType.LANE_CHANGE:
