@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """
-Lateral Post-Processor Daemon — Algorithm D (B + C Hybrid)
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 
-Ported from rlog_viewer/plugin_bev_fusion.py for real-time use in sunnypilot.
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+
+Lateral Post-Processor Daemon - Algorithm D (B + C Hybrid).
 
 Subscribes to modelV2, carState, livePose, liveDelay and publishes
 lateralManeuverPlan with a processed desired curvature that blends:
@@ -13,12 +16,8 @@ lateralManeuverPlan with a processed desired curvature that blends:
 The processed curvature replaces modelV2.action.desiredCurvature via the
 lateralManeuverPlan priority mechanism already wired in controlsd.py.
 """
-
-from __future__ import annotations
-
 import math
 from collections import deque
-from typing import Deque, Optional, Tuple
 
 import numpy as np
 
@@ -27,15 +26,12 @@ from cereal import car
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL, Ratekeeper
 from openpilot.common.swaglog import cloudlog
-from openpilot.selfdrive.controls.lib.drive_helpers import clip_curvature
 
-# ══════════════════════════════════════════════════════════════════
 # Algorithm constants (matching rlog_viewer/plugin_bev_fusion.py)
-# ══════════════════════════════════════════════════════════════════
 
 GRID_STEP_M = 0.5
 MIN_PROCESSING_HORIZON_M = 55.0
-PREVIEW_LOOKAHEAD_TIMES: Tuple[float, ...] = (0.10, 0.25, 0.45, 0.70, 1.00)
+PREVIEW_LOOKAHEAD_TIMES: tuple[float, ...] = (0.10, 0.25, 0.45, 0.70, 1.00)
 PREVIEW_LOOKAHEAD_WEIGHTS_RAW = np.array([0.15, 0.20, 0.25, 0.22, 0.18], dtype=np.float64)
 DEFAULT_PREVIEW_RESPONSE_DELAY_S = 0.18
 PREVIEW_END_FADE_M = 10.0
@@ -96,9 +92,7 @@ PREVIEW_LOOKAHEAD_SCALE = 1.0
 WHEELBASE_M = 2.70
 
 
-# ══════════════════════════════════════════════════════════════════
 # Utility functions (ported from plugin_bev_fusion.py)
-# ══════════════════════════════════════════════════════════════════
 
 def max_finite_x(path_x: np.ndarray) -> float:
   arr = np.asarray(path_x, dtype=np.float64)
@@ -220,8 +214,8 @@ def preview_shape_curvature(
     x_grid: np.ndarray,
     *,
     response_delay_s: float = DEFAULT_PREVIEW_RESPONSE_DELAY_S,
-    support_horizon_m: Optional[float] = None,
-    confidence: Optional[np.ndarray] = None,
+    support_horizon_m: float | None = None,
+    confidence: np.ndarray | None = None,
     lookahead_scale: float = 1.0,
 ) -> np.ndarray:
   kappa_arr = np.asarray(kappa, dtype=np.float64)
@@ -292,7 +286,7 @@ def blend_to_reference(
     *,
     full_effect_m: float,
     zero_effect_m: float,
-    confidence: Optional[np.ndarray] = None,
+    confidence: np.ndarray | None = None,
 ) -> np.ndarray:
   alpha = 1.0 - _smoothstep(np.asarray(x_grid, dtype=np.float64), full_effect_m, zero_effect_m)
   if confidence is not None and len(confidence) == len(x_grid):
@@ -306,9 +300,9 @@ def build_control_stable_path(
     v: float,
     *,
     response_delay_s: float = DEFAULT_PREVIEW_RESPONSE_DELAY_S,
-    confidence: Optional[np.ndarray] = None,
-    tail_reference: Optional[np.ndarray] = None,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float]:
+    confidence: np.ndarray | None = None,
+    tail_reference: np.ndarray | None = None,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, float]:
   y_base = smooth_signal(y_ref, REFERENCE_SMOOTH_WINDOW)
   kappa_ref = smooth_signal(
     curvature_from_local_path(x_grid, y_base),
@@ -437,8 +431,8 @@ def hybrid_c_weight(
 
 def stabilize_c_scalar_candidate(
     observed: float,
-    prev_filtered: Optional[float],
-    median_history: Deque[float],
+    prev_filtered: float | None,
+    median_history: deque[float],
     *, contributors: int, local_confidence: float,
     lane_change_active: bool = False,
 ) -> float:
@@ -461,9 +455,7 @@ def wrap_to_pi(angle: float) -> float:
   return math.atan2(math.sin(angle), math.cos(angle))
 
 
-# ══════════════════════════════════════════════════════════════════
 # Temporal BEV Path Fuser
-# ══════════════════════════════════════════════════════════════════
 
 class _PathRecord:
   __slots__ = ('t', 'x_local', 'y_local', 'confidence', 'global_x', 'global_y', 'global_psi')
@@ -483,7 +475,7 @@ class _PathRecord:
 class TemporalBEVPathFuser:
   def __init__(self, history_seconds: float = DEFAULT_FUSION_HISTORY_SECONDS):
     self.history_seconds = history_seconds
-    self.history: Deque[_PathRecord] = deque()
+    self.history: deque[_PathRecord] = deque()
 
   def clear(self) -> None:
     self.history.clear()
@@ -498,7 +490,7 @@ class TemporalBEVPathFuser:
     while self.history and (record.t - self.history[0].t) > self.history_seconds:
       self.history.popleft()
 
-  def fuse(self, record: _PathRecord, x_grid: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+  def fuse(self, record: _PathRecord, x_grid: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     x_grid = np.asarray(x_grid, dtype=np.float64)
     candidates: list = []
     weights_list: list = []
@@ -544,7 +536,7 @@ class TemporalBEVPathFuser:
     return self._smooth(y_est, coverage_mask=valid_out), valid_out
 
   @staticmethod
-  def _warp(old: _PathRecord, cur: _PathRecord) -> Tuple[np.ndarray, np.ndarray]:
+  def _warp(old: _PathRecord, cur: _PathRecord) -> tuple[np.ndarray, np.ndarray]:
     co, so = math.cos(old.global_psi), math.sin(old.global_psi)
     xg = old.global_x + co * old.x_local - so * old.y_local
     yg = old.global_y + so * old.x_local + co * old.y_local
@@ -555,7 +547,7 @@ class TemporalBEVPathFuser:
     y_cur = -sc * dx + cc * dy
     return x_cur, y_cur
 
-  def _smooth(self, y: np.ndarray, *, coverage_mask: Optional[np.ndarray] = None) -> np.ndarray:
+  def _smooth(self, y: np.ndarray, *, coverage_mask: np.ndarray | None = None) -> np.ndarray:
     window = FUSION_SMOOTH_WINDOW
     if window < 3:
       return y.copy()
@@ -573,9 +565,7 @@ class TemporalBEVPathFuser:
     return numer / np.maximum(denom, 1e-9)
 
 
-# ══════════════════════════════════════════════════════════════════
 # Real-time Algorithm D Processor
-# ══════════════════════════════════════════════════════════════════
 
 class LateralPostProcessor:
   """Real-time Algorithm D (B + C Hybrid) lateral post-processor.
@@ -591,18 +581,18 @@ class LateralPostProcessor:
     self.global_x: float = 0.0
     self.global_y: float = 0.0
     self.global_psi: float = 0.0
-    self.prev_t: Optional[float] = None
-    self.prev_pose_yaw: Optional[float] = None
+    self.prev_t: float | None = None
+    self.prev_pose_yaw: float | None = None
 
     # Scalar stabilization state
-    self.prev_proc_scalar_filtered: Optional[float] = None
-    self.proc_scalar_history: Deque[float] = deque(maxlen=C_SCALAR_MEDIAN_WINDOW)
+    self.prev_proc_scalar_filtered: float | None = None
+    self.proc_scalar_history: deque[float] = deque(maxlen=C_SCALAR_MEDIAN_WINDOW)
 
     # Lane-change state
     self.prev_blinker: bool = False
 
     # Cached grid
-    self._x_grid: Optional[np.ndarray] = None
+    self._x_grid: np.ndarray | None = None
     self._grid_max_x: float = 0.0
 
   def _ensure_grid(self, max_x: float) -> np.ndarray:
@@ -614,7 +604,7 @@ class LateralPostProcessor:
 
   def _update_pose(self, t: float, v_ego: float,
                    pose_yaw: float, yaw_rate: float,
-                   steering_angle_deg: float) -> Tuple[float, float, float]:
+                   steering_angle_deg: float) -> tuple[float, float, float]:
     """Dead-reckon global pose from ego motion."""
     if self.prev_t is not None:
       dt = t - self.prev_t
@@ -653,8 +643,7 @@ class LateralPostProcessor:
       left_blinker: bool,
       right_blinker: bool,
       response_delay_s: float,
-      roll: float,
-  ) -> Optional[float]:
+  ) -> float | None:
     """Process one frame and return the processed desired curvature, or None."""
     if len(path_x) < 5:
       return None
@@ -681,11 +670,11 @@ class LateralPostProcessor:
     path_conf = confidence_from_path_std(path_y_std, len(path_x))
     path_conf_grid = resample_to_grid(path_x, path_conf, x_grid)
 
-    # ── B branch: single-frame preview shaping ──
+    # -- B branch: single-frame preview shaping --
     y_raw_grid = resample_to_grid(path_x, path_y, x_grid)
     y_preview = smooth_signal(y_raw_grid, REFERENCE_SMOOTH_WINDOW)
 
-    # ── Dead-reckon pose and push to fusion ──
+    # -- Dead-reckon pose and push to fusion --
     gx, gy, gpsi = self._update_pose(timestamp, v_ego, pose_yaw, yaw_rate, steering_angle_deg)
     record = _PathRecord(
       t=timestamp,
@@ -698,10 +687,10 @@ class LateralPostProcessor:
     if blinker:
       self.fuser.prune_to_seconds(timestamp, LANE_CHANGE_FUSION_HISTORY_S)
 
-    # ── C branch: temporal fusion ──
+    # -- C branch: temporal fusion --
     y_fused, _ = self.fuser.fuse(record, x_grid)
 
-    # ── D: hybrid blend ──
+    # -- D: hybrid blend --
     local_conf = local_window_confidence(path_conf_grid, x_grid, center_m=scalar_ref_distance)
     num_contrib = len(self.fuser.history)
     weight_c = hybrid_c_weight(
@@ -713,7 +702,7 @@ class LateralPostProcessor:
     y_hybrid = (1.0 - weight_c) * y_preview + weight_c * y_fused
     y_hybrid = smooth_signal(y_hybrid, REFERENCE_SMOOTH_WINDOW)
 
-    # ── Curvature from hybrid path ──
+    # -- Curvature from hybrid path --
     kappa_hybrid_base = clamp_kappa_beyond_horizon(
       smooth_signal(
         curvature_from_local_path(x_grid, y_hybrid),
@@ -722,7 +711,7 @@ class LateralPostProcessor:
       x_grid, max_x,
     )
 
-    # ── Preview shaping on curvature ──
+    # -- Preview shaping on curvature --
     if trust_horizon > 0.0:
       kappa_hybrid = clamp_kappa_beyond_horizon(
         preview_shape_curvature(
@@ -737,10 +726,10 @@ class LateralPostProcessor:
     else:
       kappa_hybrid = kappa_hybrid_base
 
-    # ── Extract scalar curvature ──
+    # -- Extract scalar curvature --
     proc_observed = scalar_reference_curvature(kappa_hybrid, x_grid, center_m=scalar_ref_distance)
 
-    # ── Stabilize scalar (temporal median + EMA) ──
+    # -- Stabilize scalar (temporal median + EMA) --
     proc_raw = stabilize_c_scalar_candidate(
       proc_observed,
       self.prev_proc_scalar_filtered,
@@ -754,9 +743,7 @@ class LateralPostProcessor:
     return proc_raw
 
 
-# ══════════════════════════════════════════════════════════════════
 # Daemon entry point
-# ══════════════════════════════════════════════════════════════════
 
 def main():
   params = Params()
@@ -794,7 +781,7 @@ def main():
     path_y_std = np.array(pos.yStd, dtype=np.float64) if len(pos.yStd) > 0 else np.ones_like(path_y)
 
     v_ego = max(float(cs.vEgo), 0.0)
-    timestamp = float(model.timestamp) * 1e-9 if model.timestamp > 0 else float(sm.logMonoTime['modelV2']) * 1e-9
+    timestamp = float(model.timestampEof) * 1e-9 if model.timestampEof > 0 else float(sm.logMonoTime['modelV2']) * 1e-9
 
     # livePose yaw and yaw rate
     pose_yaw = float(live_pose.orientationNED.z) if live_pose.orientationNED.valid else float('nan')
@@ -812,9 +799,6 @@ def main():
       if math.isfinite(delay_val) and delay_val >= 0.0:
         response_delay_s = float(np.clip(delay_val, 0.0, 0.60))
 
-    # Roll from livePose
-    roll = float(live_pose.orientationNED.x) if live_pose.orientationNED.valid else 0.0
-
     # Don't publish if not engaged
     enabled = bool(ss.enabled)
 
@@ -830,7 +814,6 @@ def main():
       left_blinker=left_blinker,
       right_blinker=right_blinker,
       response_delay_s=response_delay_s,
-      roll=roll,
     )
 
     plan_msg = messaging.new_message('lateralManeuverPlan')
